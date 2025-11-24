@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- SortableJS (拖曳排序神器) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  
+  <style>
+    .tab-btn.active { border-bottom: 2px solid #10b981; color: #10b981; }
+    .tab-btn { color: #94a3b8; transition: all 0.3s; }
+    .tab-btn:hover { color: #e2e8f0; }
+    /* 拖曳中的樣式 */
+    .sortable-ghost { opacity: 0.4; background: #334155; }
+    .sortable-drag { cursor: grabbing; }
+    .handle { cursor: grab; }
+  </style>
+</head>
+<body class="bg-slate-800 text-slate-100 min-h-screen p-4 md:p-8">
+
+  <!-- 模擬器 (預覽用) -->
+  <script>
+    if (typeof google === 'undefined') {
+      window.google = { script: { run: {
+        withSuccessHandler: (cb) => {
+           return { 
+             getData: () => cb([{id:'1', title:'測試卡片1'}, {id:'2', title:'測試卡片2'}]),
+             getSettingsMap: () => cb({site_title: '我的主頁'}),
+             saveOrder: () => cb([]),
+             updateData: () => cb([]),
+             addData: () => cb([]),
+             saveSettings: () => cb({})
+           }
+        },
+        withFailureHandler: () => ({ getData: () => {} })
+      }}};
+    }
+  </script>
+
+  <div class="max-w-4xl mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
+    
+    <!-- 頂部 Header -->
+    <div class="px-6 py-5 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 backdrop-blur">
+      <h1 class="text-xl font-bold text-white flex items-center gap-2">
+        <i class="fas fa-sliders-h text-emerald-500"></i> 後台管理中心
+      </h1>
+      <a href="<?= ScriptApp.getService().getUrl() ?>" target="_blank" class="text-xs text-blue-400 hover:text-white flex items-center gap-1 border border-blue-500/30 px-3 py-1.5 rounded-full hover:bg-blue-500/20 transition">
+        <i class="fas fa-external-link-alt"></i> 前往首頁
+      </a>
+    </div>
+
+    <!-- Tab 切換 -->
+    <div class="flex px-6 border-b border-slate-700 bg-slate-800/30">
+      <button onclick="switchTab('cards')" id="tab-cards" class="tab-btn active px-4 py-4 font-bold text-sm tracking-wide">
+        <i class="fas fa-th-large mr-2"></i>連結卡片
+      </button>
+      <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn px-4 py-4 font-bold text-sm tracking-wide">
+        <i class="fas fa-cog mr-2"></i>全站設定
+      </button>
+    </div>
+
+    <!-- ================= 1. 卡片管理頁面 ================= -->
+    <div id="view-cards" class="p-6">
+      
+      <!-- 新增/編輯 表單 -->
+      <div class="bg-slate-800/80 rounded-xl p-5 mb-8 border border-slate-700 shadow-lg">
+        <div class="flex justify-between items-center mb-4">
+          <h2 id="form-title" class="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+            <i class="fas fa-plus-circle"></i> 新增卡片
+          </h2>
+          <button onclick="resetCardForm()" id="cancel-edit-btn" class="hidden text-xs text-slate-400 hover:text-white">
+            <i class="fas fa-times"></i> 取消編輯
+          </button>
+        </div>
+        
+        <form id="cardForm" class="space-y-4">
+          <input type="hidden" name="id" id="field-id"> <!-- 編輯用的 ID -->
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">標題</label>
+              <input type="text" name="title" id="field-title" required placeholder="例如：我的作品集" 
+                     class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">連結 (URL)</label>
+              <input type="url" name="url" id="field-url" required placeholder="https://..." 
+                     class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">圖片網址 (Image URL)</label>
+            <div class="flex gap-2">
+               <input type="url" name="imageUrl" id="field-imageUrl" placeholder="https://..." 
+                      class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
+               <div class="w-10 h-10 bg-slate-900 rounded border border-slate-700 overflow-hidden flex-shrink-0">
+                  <img id="img-preview" src="" onerror="this.style.display='none'" class="w-full h-full object-cover" style="display:none">
+               </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">描述</label>
+            <textarea name="description" id="field-description" rows="2" placeholder="簡單介紹內容..." 
+                      class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition resize-none"></textarea>
+          </div>
+
+          <button type="submit" id="submit-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg shadow-lg shadow-emerald-900/20 transition flex items-center justify-center gap-2">
+            <i class="fas fa-paper-plane"></i> 新增卡片
+          </button>
+        </form>
+      </div>
+
+      <!-- 列表區 (Sortable) -->
+      <div>
+        <div class="flex justify-between items-end mb-2 px-1">
+          <h3 class="text-xs font-bold text-slate-500 uppercase">
+            目前列表 <span class="text-slate-600 font-normal ml-1">(拖曳可排序)</span>
+          </h3>
+          <span id="save-status" class="text-xs text-emerald-400 opacity-0 transition">已儲存排序</span>
+        </div>
+        
+        <div id="card-list" class="space-y-2">
+          <div class="text-center py-10 text-slate-500">載入中...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 2. 全站設定頁面 ================= -->
+    <div id="view-settings" class="hidden p-6">
+      <form id="settingsForm" class="space-y-6">
+        
+        <!-- 基本資訊 -->
+        <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700">
+          <h3 class="text-emerald-400 text-sm font-bold mb-4 uppercase"><i class="fas fa-id-card mr-2"></i>基本資料</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+             <div>
+               <label class="block text-xs text-slate-400 mb-1">網站大標題</label>
+               <input type="text" name="site_title" placeholder="Hello, I'm Alex" class="w-full bg-slate-900 border-none rounded p-2.5 text-white focus:ring-2 focus:ring-blue-500">
+             </div>
+             <div>
+               <label class="block text-xs text-slate-400 mb-1">副標題 (Subtitle)</label>
+               <input type="text" name="site_subtitle" placeholder="Developer & Designer" class="w-full bg-slate-900 border-none rounded p-2.5 text-white focus:ring-2 focus:ring-blue-500">
+             </div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">個人頭像 (Avatar URL)</label>
+            <input type="url" name="avatar_url" placeholder="https://..." class="w-full bg-slate-900 border-none rounded p-2.5 text-white focus:ring-2 focus:ring-blue-500 mb-4">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">個人簡介 (Bio)</label>
+            <textarea name="bio_text" placeholder="顯示在首頁的自我介紹..." class="w-full bg-slate-900 border-none rounded p-2.5 text-white h-24 resize-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+        </div>
+
+        <!-- 社群連結 -->
+        <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700">
+          <h3 class="text-blue-400 text-sm font-bold mb-4 uppercase"><i class="fas fa-share-alt mr-2"></i>社群連結</h3>
+          <div class="space-y-3">
+             <div class="flex items-center bg-slate-900 rounded px-3 border border-slate-700">
+                <i class="fab fa-github text-slate-400 w-6"></i>
+                <input type="text" name="github_username" placeholder="GitHub ID (例如: google)" class="bg-transparent border-none w-full p-2.5 text-white focus:outline-none">
+             </div>
+             <div class="flex items-center bg-slate-900 rounded px-3 border border-slate-700">
+                <i class="fab fa-instagram text-slate-400 w-6"></i>
+                <input type="url" name="instagram_url" placeholder="Instagram URL" class="bg-transparent border-none w-full p-2.5 text-white focus:outline-none">
+             </div>
+             <div class="flex items-center bg-slate-900 rounded px-3 border border-slate-700">
+                <i class="fab fa-twitter text-slate-400 w-6"></i>
+                <input type="url" name="twitter_url" placeholder="Twitter (X) URL" class="bg-transparent border-none w-full p-2.5 text-white focus:outline-none">
+             </div>
+             <div class="flex items-center bg-slate-900 rounded px-3 border border-slate-700">
+                <i class="fab fa-linkedin text-slate-400 w-6"></i>
+                <input type="url" name="linkedin_url" placeholder="LinkedIn URL" class="bg-transparent border-none w-full p-2.5 text-white focus:outline-none">
+             </div>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-900/30 transition flex justify-center items-center gap-2">
+          <i class="fas fa-save"></i> 儲存全站設定
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  <script>
+    let password = '';
+
+    window.onload = function() {
+      // 偵測是否為 GAS 環境
+      if (typeof google === 'undefined' || window.location.href.indexOf('script.google.com') === -1) {
+        password = '1234'; 
+        initData();
+      } else {
+        Swal.fire({
+          title: '管理者登入',
+          input: 'password',
+          inputPlaceholder: '請輸入密碼',
+          inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+          confirmButtonText: '登入',
+          confirmButtonColor: '#10b981',
+          allowOutsideClick: false,
+          background: '#1e293b',
+          color: '#fff'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            password = result.value;
+            initData();
+          }
+        });
+      }
+    };
+
+    function initData() {
+      loadCards();
+      loadSettings();
+    }
+
+    // --- Tab 切換 ---
+    function switchTab(tabName) {
+      document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+      
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+    }
+
+    // --- 卡片功能 (載入、新增、編輯、排序) ---
+    
+    function loadCards() {
+      google.script.run.withSuccessHandler(renderCards).getData();
+    }
+
+    function renderCards(data) {
+      const container = document.getElementById('card-list');
+      container.innerHTML = '';
+      
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-slate-500 border border-dashed border-slate-700 rounded-lg">尚無卡片資料</div>';
+        return;
+      }
+
+      data.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'group bg-slate-800 p-3 rounded-lg border border-slate-700 flex items-center gap-4 hover:border-slate-500 transition shadow-sm';
+        el.setAttribute('data-id', item.id);
+        el.innerHTML = `
+          <div class="handle text-slate-500 hover:text-white px-2 cursor-grab active:cursor-grabbing">
+            <i class="fas fa-grip-vertical"></i>
+          </div>
+          <div class="w-12 h-12 bg-slate-900 rounded overflow-hidden flex-shrink-0 border border-slate-700">
+            <img src="${item.imageUrl || ''}" onerror="this.style.display='none'" class="w-full h-full object-cover">
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-slate-200 truncate">${item.title}</div>
+            <div class="text-xs text-slate-500 truncate">${item.url}</div>
+          </div>
+          <div class="flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onclick='editCard(${JSON.stringify(item)})' class="p-2 text-blue-400 hover:bg-blue-900/30 rounded" title="編輯">
+              <i class="fas fa-pen"></i>
+            </button>
+            <button onclick="deleteCard('${item.id}')" class="p-2 text-red-400 hover:bg-red-900/30 rounded" title="刪除">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(el);
+      });
+
+      // 初始化拖曳排序
+      new Sortable(container, {
+        animation: 150,
+        handle: '.handle',
+        ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag',
+        onEnd: function (evt) {
+          saveOrder();
+        }
+      });
+    }
+
+    // 拖曳後儲存順序
+    function saveOrder() {
+      const container = document.getElementById('card-list');
+      const ids = Array.from(container.children).map(el => el.getAttribute('data-id'));
+      
+      const statusEl = document.getElementById('save-status');
+      statusEl.textContent = "儲存中...";
+      statusEl.style.opacity = "1";
+      
+      google.script.run.withSuccessHandler(() => {
+        statusEl.textContent = "已儲存排序";
+        setTimeout(() => { statusEl.style.opacity = "0"; }, 2000);
+      }).withFailureHandler(err => {
+        statusEl.textContent = "儲存失敗";
+        statusEl.className = "text-xs text-red-400";
+      }).saveOrder(ids, password);
+    }
+
+    // 編輯模式
+    function editCard(item) {
+      document.getElementById('field-id').value = item.id;
+      document.getElementById('field-title').value = item.title;
+      document.getElementById('field-url').value = item.url;
+      document.getElementById('field-imageUrl').value = item.imageUrl;
+      document.getElementById('field-description').value = item.description;
+      
+      // 更新預覽圖
+      const imgPreview = document.getElementById('img-preview');
+      if(item.imageUrl) { imgPreview.src = item.imageUrl; imgPreview.style.display = 'block'; }
+      
+      // 切換按鈕狀態
+      document.getElementById('form-title').innerHTML = '<i class="fas fa-edit"></i> 編輯卡片';
+      document.getElementById('form-title').className = 'text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2';
+      document.getElementById('submit-btn').innerHTML = '<i class="fas fa-save"></i> 更新卡片';
+      document.getElementById('submit-btn').className = 'w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2';
+      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetCardForm() {
+      document.getElementById('cardForm').reset();
+      document.getElementById('field-id').value = '';
+      document.getElementById('img-preview').style.display = 'none';
+      
+      document.getElementById('form-title').innerHTML = '<i class="fas fa-plus-circle"></i> 新增卡片';
+      document.getElementById('form-title').className = 'text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2';
+      document.getElementById('submit-btn').innerHTML = '<i class="fas fa-paper-plane"></i> 新增卡片';
+      document.getElementById('submit-btn').className = 'w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg shadow-lg shadow-emerald-900/20 transition flex items-center justify-center gap-2';
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
+    }
+
+    // 處理卡片表單提交
+    document.getElementById('cardForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const id = document.getElementById('field-id').value;
+      const formData = {
+        id: id,
+        title: this.title.value,
+        url: this.url.value,
+        imageUrl: this.imageUrl.value,
+        description: this.description.value,
+        password: password
+      };
+
+      Swal.fire({ title: id ? '更新中...' : '新增中...', didOpen: () => Swal.showLoading(), background: '#1e293b', color: '#fff' });
+
+      const handler = google.script.run.withSuccessHandler((data) => {
+        Swal.fire({ icon: 'success', title: '成功', timer: 1500, showConfirmButton: false, background: '#1e293b', color: '#fff' });
+        resetCardForm();
+        renderCards(data);
+      }).withFailureHandler(err => Swal.fire('錯誤', err.message, 'error'));
+
+      if (id) {
+        handler.updateData(formData);
+      } else {
+        handler.addData(formData);
+      }
+    });
+
+    function deleteCard(id) {
+      Swal.fire({
+        title: '確定刪除?', text: "刪除後無法復原", icon: 'warning',
+        showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b', confirmButtonText: '刪除', background: '#1e293b', color: '#fff'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          google.script.run.withSuccessHandler(renderCards).deleteData(id, password);
+        }
+      });
+    }
+
+    // --- 設定功能 ---
+
+    function loadSettings() {
+      google.script.run.withSuccessHandler(settings => {
+        const form = document.getElementById('settingsForm');
+        for (const key in settings) {
+          if (form[key]) form[key].value = settings[key];
+        }
+      }).getSettingsMap();
+    }
+
+    document.getElementById('settingsForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = { password: password };
+      new FormData(this).forEach((value, key) => formData[key] = value);
+
+      Swal.fire({ title: '儲存中...', didOpen: () => Swal.showLoading(), background: '#1e293b', color: '#fff' });
+      
+      google.script.run.withSuccessHandler(() => {
+        Swal.fire({ icon: 'success', title: '設定已更新', text: '前台頁面將會顯示新內容', background: '#1e293b', color: '#fff' });
+      }).withFailureHandler(err => Swal.fire('錯誤', err.message, 'error')).saveSettings(formData);
+    });
+
+    // 圖片預覽監聽
+    document.getElementById('field-imageUrl').addEventListener('input', function() {
+      const img = document.getElementById('img-preview');
+      if(this.value) { img.src = this.value; img.style.display = 'block'; } 
+      else { img.style.display = 'none'; }
+    });
+  </script>
+</body>
+</html>
