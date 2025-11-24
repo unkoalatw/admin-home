@@ -4,173 +4,110 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard</title>
-  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  
-  <style>
-    .tab-btn.active { border-bottom: 2px solid #10b981; color: #10b981; background: rgba(16, 185, 129, 0.05); }
-    .tab-btn { color: #94a3b8; transition: all 0.3s; }
-    .tab-btn:hover { color: #e2e8f0; background: rgba(255,255,255,0.02); }
-    .terminal-text { font-family: 'Courier New', Courier, monospace; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-  </style>
 </head>
 <body class="bg-slate-800 text-slate-100 min-h-screen p-4 md:p-8 font-sans">
 
-  <!-- ==================== CONFIGURATION ==================== -->
   <script>
     // 您的 GAS API 網址
     const API_URL = "https://script.google.com/macros/s/AKfycbw1J5DNcuCTfTGeQXhosPZYOW0MAfXDCNBHIi7rQTQMw7Nrfieuc4XEw0diuQkQ6XdUPg/exec";
   </script>
-  <!-- ======================================================= -->
 
   <div class="max-w-6xl mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
     
-    <!-- Header -->
     <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/90 backdrop-blur sticky top-0 z-10">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 bg-gradient-to-tr from-emerald-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <i class="fas fa-rocket text-white text-sm"></i>
-        </div>
-        <h1 class="text-lg font-bold text-white tracking-wide">
-          Admin <span class="text-slate-500 font-normal">Console</span>
-        </h1>
+        <h1 class="text-lg font-bold text-white tracking-wide">Admin Console</h1>
+        <span id="version-tag" class="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-slate-400">v...</span>
       </div>
       <div class="flex items-center gap-3">
-        <span id="status-indicator" class="text-xs text-red-400 flex items-center gap-1.5 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">
-          <span class="w-1.5 h-1.5 bg-red-400 rounded-full"></span> Offline
-        </span>
-        <button onclick="logout()" class="text-xs text-slate-400 hover:text-white transition bg-slate-800 px-3 py-1 rounded border border-slate-700">
-          登出
-        </button>
+        <span id="status-indicator" class="text-xs text-red-400 flex items-center gap-1.5 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">Offline</span>
+        <button onclick="logout()" class="text-xs bg-slate-800 px-3 py-1 rounded border border-slate-700 hover:bg-slate-700">登出</button>
       </div>
     </div>
 
-    <!-- Tabs -->
     <div class="flex border-b border-slate-700 bg-slate-800/30">
-      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active w-1/3 py-4 font-bold text-sm tracking-wide border-r border-slate-700/50">
-        <i class="fas fa-chart-line mr-2"></i>儀表板
-      </button>
-      <button onclick="switchTab('cards')" id="tab-cards" class="tab-btn w-1/3 py-4 font-bold text-sm tracking-wide border-r border-slate-700/50">
-        <i class="fas fa-th-large mr-2"></i>連結管理
-      </button>
-      <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn w-1/3 py-4 font-bold text-sm tracking-wide">
-        <i class="fas fa-cogs mr-2"></i>系統設定
-      </button>
+      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active w-1/3 py-4 font-bold text-sm border-r border-slate-700/50">儀表板</button>
+      <button onclick="switchTab('cards')" id="tab-cards" class="tab-btn w-1/3 py-4 font-bold text-sm border-r border-slate-700/50">卡片管理</button>
+      <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn w-1/3 py-4 font-bold text-sm">系統設定</button>
     </div>
 
-    <!-- 1. Dashboard -->
-    <div id="view-dashboard" class="p-6 md:p-8 animate-fade-in">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-gradient-to-br from-slate-800 to-slate-800/50 p-5 rounded-2xl border border-slate-700 shadow-lg relative overflow-hidden">
-          <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fas fa-link text-6xl text-blue-500"></i></div>
-          <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Active Links</h3>
+    <!-- Dashboard -->
+    <div id="view-dashboard" class="p-6 md:p-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+          <h3 class="text-slate-400 text-xs font-bold uppercase">連結總數</h3>
           <div class="text-3xl font-bold text-white" id="dash-total-links">-</div>
         </div>
-        <div class="bg-gradient-to-br from-slate-800 to-slate-800/50 p-5 rounded-2xl border border-slate-700 shadow-lg relative overflow-hidden">
-          <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fas fa-eye text-6xl text-purple-500"></i></div>
-          <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Views</h3>
-          <div class="text-3xl font-bold text-white" id="dash-views">1,204</div>
-        </div>
-        <div class="bg-gradient-to-br from-slate-800 to-slate-800/50 p-5 rounded-2xl border border-slate-700 shadow-lg relative overflow-hidden">
-          <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fas fa-server text-6xl text-emerald-500"></i></div>
-          <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">System Status</h3>
-          <div class="text-3xl font-bold text-emerald-400">Stable</div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-lg">
-          <div class="h-64 w-full"><canvas id="trafficChart"></canvas></div>
-        </div>
-        <div class="bg-black/80 p-4 rounded-2xl border border-slate-700 shadow-lg font-mono text-xs overflow-hidden flex flex-col">
-          <div class="flex justify-between items-center mb-2 border-b border-slate-800 pb-2">
-             <span class="text-slate-400">System Log</span>
-             <span class="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
-          </div>
-          <div id="terminal-output" class="flex-1 overflow-y-auto h-56 text-green-500/80 space-y-1 terminal-text"></div>
+        <div class="bg-black/80 p-4 rounded-xl border border-slate-700 font-mono text-xs h-48 overflow-y-auto text-green-500" id="terminal-output">
+          <div>> System ready.</div>
         </div>
       </div>
     </div>
 
-    <!-- 2. Link Management -->
+    <!-- Card Management -->
     <div id="view-cards" class="hidden p-6">
-      <div class="bg-slate-800/80 rounded-xl p-5 mb-8 border border-slate-700 shadow-lg">
-        <div class="flex justify-between items-center mb-4">
-          <h2 id="form-title" class="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-            <i class="fas fa-plus-circle"></i> 新增卡片
-          </h2>
-          <button onclick="resetCardForm()" id="cancel-edit-btn" class="hidden text-xs text-slate-400 hover:text-white bg-slate-700 px-2 py-1 rounded">取消</button>
-        </div>
+      <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700 mb-6">
+        <h2 class="text-sm font-bold text-emerald-400 mb-4 uppercase">新增/編輯卡片</h2>
         <form id="cardForm" class="space-y-4">
           <input type="hidden" name="id" id="field-id">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" name="title" id="field-title" required placeholder="標題" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
-            <input type="url" name="url" id="field-url" required placeholder="連結 URL" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+            <input type="text" name="title" id="field-title" required placeholder="標題" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
+            <input type="url" name="url" id="field-url" required placeholder="連結 URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
           </div>
+          <input type="url" name="imageUrl" id="field-imageUrl" placeholder="圖片 URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
+          <textarea name="description" id="field-description" rows="2" placeholder="描述" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white"></textarea>
           <div class="flex gap-2">
-             <input type="url" name="imageUrl" id="field-imageUrl" placeholder="圖片 URL" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
-             <div class="w-10 h-10 bg-slate-900 rounded border border-slate-700 overflow-hidden"><img id="img-preview" src="" onerror="this.style.display='none'" class="w-full h-full object-cover hidden"></div>
+            <button type="submit" id="submit-btn" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded transition">儲存</button>
+            <button type="button" onclick="resetCardForm()" class="px-4 bg-slate-700 hover:bg-slate-600 rounded text-slate-300">重置</button>
           </div>
-          <textarea name="description" id="field-description" rows="2" placeholder="描述" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 resize-none"></textarea>
-          <button type="submit" id="submit-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg transition">新增卡片</button>
         </form>
-      </div>
-
-      <div class="flex justify-between items-end mb-3 px-1">
-        <h3 class="text-xs font-bold text-slate-500 uppercase">目前列表 <span class="ml-1 bg-slate-800 px-2 py-0.5 rounded text-[10px]">拖曳可排序</span></h3>
       </div>
       <div id="card-list" class="space-y-2 pb-10"></div>
     </div>
 
-    <!-- 3. Settings -->
+    <!-- Settings -->
     <div id="view-settings" class="hidden p-6">
-      <form id="settingsForm" class="space-y-6">
+      <form id="settingsForm" class="space-y-4">
         <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700">
-          <h3 class="text-emerald-400 text-sm font-bold mb-4 uppercase">基本資料</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-             <input type="text" name="site_title" placeholder="網站標題" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
-             <input type="text" name="site_subtitle" placeholder="打字機副標題 (用逗號分隔)" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
-          </div>
-          <input type="url" name="avatar_url" placeholder="頭像 URL" class="w-full bg-slate-900 border-none rounded p-2.5 text-white mb-4">
-          <textarea name="bio_text" placeholder="個人簡介" class="w-full bg-slate-900 border-none rounded p-2.5 text-white h-24 resize-none"></textarea>
+          <h3 class="text-emerald-400 text-sm font-bold mb-4 uppercase">網站資訊</h3>
+          <input type="text" name="site_title" placeholder="網站標題" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
+          <input type="text" name="site_subtitle" placeholder="副標題 (打字機內容, 用逗號隔開)" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
+          <input type="url" name="avatar_url" placeholder="頭像 URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
+          <textarea name="bio_text" placeholder="個人簡介" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white h-20"></textarea>
         </div>
-
         <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700">
-          <h3 class="text-blue-400 text-sm font-bold mb-4 uppercase">社群連結</h3>
-          <div class="space-y-3">
-             <input type="text" name="github_username" placeholder="GitHub ID" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
-             <input type="url" name="instagram_url" placeholder="Instagram URL" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
-             <input type="url" name="twitter_url" placeholder="Twitter URL" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
-             <input type="url" name="linkedin_url" placeholder="LinkedIn URL" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
-          </div>
+          <h3 class="text-blue-400 text-sm font-bold mb-4 uppercase">社群 ID / URL</h3>
+          <input type="text" name="github_username" placeholder="GitHub ID" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
+          <input type="url" name="instagram_url" placeholder="Instagram URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
+          <input type="url" name="twitter_url" placeholder="Twitter URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
+          <input type="url" name="linkedin_url" placeholder="LinkedIn URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
         </div>
-
-        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition">儲存全站設定</button>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded transition">儲存設定</button>
       </form>
     </div>
   </div>
 
-  <script>
-    // 全域變數
-    let authToken = ''; 
-    let chartInstance = null;
+  <style>
+    .tab-btn.active { color: #10b981; border-bottom: 2px solid #10b981; background: rgba(16, 185, 129, 0.05); }
+    .tab-btn { color: #94a3b8; transition: all 0.3s; }
+  </style>
 
-    // --- 核心：API 通訊 ---
+  <script>
+    let authToken = '';
+
     async function callApi(action, payload = {}) {
-      if (!authToken) {
-        throw new Error("尚未登入");
-      }
+      if (!authToken) throw new Error("請先登入");
       
+      addLog(`Sending request: ${action}...`);
+      
+      // 使用標準 fetch POST
       const response = await fetch(API_URL, {
         method: 'POST',
-        // mode: 'no-cors' <-- 已移除，為了能讀取回傳值
         body: JSON.stringify({
           action: action,
           password: authToken,
@@ -178,144 +115,139 @@
         })
       });
 
-      const result = await response.json(); 
-      if (result.status === 'error') throw new Error(result.message);
+      const result = await response.json();
+      
+      if (result.version) document.getElementById('version-tag').innerText = result.version;
+      
+      if (result.status === 'error') {
+        addLog(`Error: ${result.message}`);
+        throw new Error(result.message);
+      }
+      
+      addLog(`Success: ${action}`);
       return result.data;
     }
 
-    // --- 初始化 ---
-    window.onload = async function() {
+    window.onload = async () => {
       await login();
     };
 
     async function login() {
       const { value: password } = await Swal.fire({
-        title: '後台登入',
+        title: '請輸入後台密碼',
         input: 'password',
-        inputPlaceholder: '請輸入密碼',
         confirmButtonText: '登入',
         confirmButtonColor: '#10b981',
         allowOutsideClick: false,
         background: '#1e293b',
-        color: '#fff',
-        preConfirm: async (pw) => {
-          try {
-            // 先用 GET 測試密碼
-            const res = await fetch(`${API_URL}?type=verify&password=${pw}`);
-            const data = await res.json();
-            if (data.status !== 'success') throw new Error();
-            return pw;
-          } catch (error) {
-            Swal.showValidationMessage('密碼錯誤或連線失敗');
-          }
-        }
+        color: '#fff'
       });
 
       if (password) {
-        authToken = password;
-        updateStatus(true);
-        addLog("> Authentication successful.");
-        initData();
+        // 驗證密碼
+        try {
+          const res = await fetch(`${API_URL}?type=verify&password=${password}`);
+          const data = await res.json();
+          
+          if (data.status === 'success') {
+            authToken = password;
+            document.getElementById('status-indicator').innerHTML = '<span class="text-emerald-400">● Online</span>';
+            if(data.version) document.getElementById('version-tag').innerText = data.version;
+            addLog("Logged in.");
+            initData();
+          } else {
+            Swal.fire({ icon: 'error', title: '密碼錯誤或後端未設定', text: data.message, background: '#1e293b', color: '#fff' }).then(login);
+          }
+        } catch(e) {
+          Swal.fire({ icon: 'error', title: '連線失敗', text: '請確認 GAS 網址與部署設定', background: '#1e293b', color: '#fff' });
+        }
       }
     }
-    
+
     function logout() {
       authToken = '';
       location.reload();
     }
 
-    function updateStatus(isOnline) {
-      const el = document.getElementById('status-indicator');
-      if(isOnline) {
-        el.innerHTML = '<span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Online';
-        el.className = 'text-xs text-emerald-400 flex items-center gap-1.5 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20';
-      }
-    }
-
     async function initData() {
-      initDashboard();
-      
-      // 載入資料 (使用 GET)
       try {
         const res = await fetch(`${API_URL}?type=api`);
         const result = await res.json();
         
         renderCards(result.data);
         renderSettings(result.settings);
-        
         document.getElementById('dash-total-links').innerText = result.data.length;
-        addLog(`> Loaded ${result.data.length} links.`);
+        addLog(`Data loaded. ${result.data.length} items.`);
       } catch (e) {
-        addLog("> Error loading initial data.");
-        console.error(e);
+        addLog("Failed to load initial data.");
       }
     }
 
-    // --- Tab Logic ---
-    function switchTab(tabName) {
+    function switchTab(tab) {
       document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
-      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+      document.getElementById(`view-${tab}`).classList.remove('hidden');
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById(`tab-${tabName}`).classList.add('active');
+      document.getElementById(`tab-${tab}`).classList.add('active');
     }
 
-    // --- Card Logic ---
-    function renderCards(data) {
-      const container = document.getElementById('card-list');
-      container.innerHTML = '';
-      
-      if (!data || data.length === 0) {
-        container.innerHTML = '<div class="text-center text-slate-500 py-10">尚無資料</div>';
-        return;
-      }
+    function addLog(msg) {
+      const t = document.getElementById('terminal-output');
+      t.innerHTML += `<div>> ${msg}</div>`;
+      t.scrollTop = t.scrollHeight;
+    }
 
+    // Render Cards
+    function renderCards(data) {
+      const list = document.getElementById('card-list');
+      list.innerHTML = '';
       data.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'bg-slate-800 p-3 rounded-lg border border-slate-700 flex items-center gap-4 group';
+        div.className = 'bg-slate-800 p-3 rounded border border-slate-700 flex items-center gap-3 group';
         div.setAttribute('data-id', item.id);
         div.innerHTML = `
-          <div class="handle text-slate-500 cursor-grab px-2"><i class="fas fa-grip-vertical"></i></div>
-          <img src="${item.imageUrl || ''}" class="w-10 h-10 rounded bg-slate-900 object-cover" onerror="this.style.display='none'">
-          <div class="flex-1 truncate text-sm text-slate-300 font-bold">${item.title}</div>
-          <div class="flex gap-2">
-            <button onclick='editCard(${JSON.stringify(item)})' class="text-blue-400 p-2"><i class="fas fa-pen"></i></button>
-            <button onclick="deleteCard('${item.id}')" class="text-red-400 p-2"><i class="fas fa-trash"></i></button>
-          </div>
+          <div class="handle cursor-grab text-slate-500 px-2"><i class="fas fa-grip-vertical"></i></div>
+          <div class="flex-1 font-bold text-slate-300 truncate">${item.title}</div>
+          <button onclick='editCard(${JSON.stringify(item)})' class="text-blue-400 p-2"><i class="fas fa-pen"></i></button>
+          <button onclick="deleteCard('${item.id}')" class="text-red-400 p-2"><i class="fas fa-trash"></i></button>
         `;
-        container.appendChild(div);
+        list.appendChild(div);
       });
-
-      new Sortable(container, {
+      
+      new Sortable(list, {
         handle: '.handle',
         animation: 150,
         onEnd: () => {
-          const ids = Array.from(container.children).map(el => el.getAttribute('data-id'));
-          performAction('saveOrder', { ids: ids }, '排序已儲存');
+          const ids = Array.from(list.children).map(el => el.getAttribute('data-id'));
+          callApi('saveOrder', { ids: ids }).then(renderCards);
         }
       });
     }
 
-    async function performAction(action, payload, successMsg) {
-      try {
-        Swal.showLoading();
-        const newData = await callApi(action, payload);
-        
-        // 如果是 Settings，API 回傳的是物件；如果是 Data 操作，API 回傳的是陣列
-        if (action === 'saveSettings') {
-           renderSettings(newData);
-        } else {
-           renderCards(newData);
-        }
-        
-        Swal.fire({ icon: 'success', title: successMsg, timer: 1000, showConfirmButton: false, background: '#1e293b', color:'#fff' });
-        addLog(`> Action ${action} completed.`);
-      } catch (e) {
-        Swal.fire({ icon: 'error', title: '錯誤', text: e.message, background: '#1e293b', color:'#fff' });
-        addLog(`> Error: ${e.message}`);
+    // Edit & Delete
+    function editCard(item) {
+      document.getElementById('field-id').value = item.id;
+      document.getElementById('field-title').value = item.title;
+      document.getElementById('field-url').value = item.url;
+      document.getElementById('field-imageUrl').value = item.imageUrl;
+      document.getElementById('field-description').value = item.description;
+      document.getElementById('submit-btn').innerText = "更新卡片";
+      document.getElementById('submit-btn').className = "flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded transition";
+    }
+
+    function deleteCard(id) {
+      if(confirm('確定刪除?')) {
+        callApi('deleteData', {id: id}).then(renderCards);
       }
     }
 
-    // Card Form
+    function resetCardForm() {
+      document.getElementById('cardForm').reset();
+      document.getElementById('field-id').value = '';
+      document.getElementById('submit-btn').innerText = "新增卡片";
+      document.getElementById('submit-btn').className = "flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded transition";
+    }
+
+    // Forms
     document.getElementById('cardForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const id = document.getElementById('field-id').value;
@@ -326,44 +258,13 @@
         imageUrl: this.imageUrl.value,
         description: this.description.value
       };
-      
-      if (id) performAction('updateData', payload, '更新成功');
-      else performAction('addData', payload, '新增成功');
-      
-      resetCardForm();
+      const action = id ? 'updateData' : 'addData';
+      callApi(action, payload).then((d) => {
+        renderCards(d);
+        resetCardForm();
+        Swal.fire({ icon: 'success', title: '成功', timer: 1000, showConfirmButton: false, background: '#1e293b', color:'#fff' });
+      }).catch(err => Swal.fire({ icon: 'error', title: '失敗', text: err.message }));
     });
-
-    function deleteCard(id) {
-      Swal.fire({
-        title: '確定刪除?', icon: 'warning', showCancelButton: true, confirmButtonText: '刪除', confirmButtonColor: '#ef4444', background: '#1e293b', color:'#fff'
-      }).then((r) => {
-        if(r.isConfirmed) performAction('deleteData', {id: id}, '已刪除');
-      });
-    }
-
-    function editCard(item) {
-      document.getElementById('field-id').value = item.id;
-      document.getElementById('field-title').value = item.title;
-      document.getElementById('field-url').value = item.url;
-      document.getElementById('field-imageUrl').value = item.imageUrl;
-      document.getElementById('field-description').value = item.description;
-      
-      const img = document.getElementById('img-preview');
-      if(item.imageUrl) { img.src=item.imageUrl; img.classList.remove('hidden'); }
-      
-      document.getElementById('submit-btn').textContent = '更新卡片';
-      document.getElementById('submit-btn').className = 'w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-lg transition';
-      document.getElementById('cancel-edit-btn').classList.remove('hidden');
-    }
-
-    function resetCardForm() {
-      document.getElementById('cardForm').reset();
-      document.getElementById('field-id').value = '';
-      document.getElementById('img-preview').classList.add('hidden');
-      document.getElementById('submit-btn').textContent = '新增卡片';
-      document.getElementById('submit-btn').className = 'w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg transition';
-      document.getElementById('cancel-edit-btn').classList.add('hidden');
-    }
 
     // Settings
     function renderSettings(s) {
@@ -377,64 +278,11 @@
       e.preventDefault();
       const formData = {};
       new FormData(this).forEach((v, k) => formData[k] = v);
-      performAction('saveSettings', formData, '設定已儲存');
-    });
-
-    // Preview Image Logic
-    document.getElementById('field-imageUrl').addEventListener('input', function() {
-       const img = document.getElementById('img-preview');
-       if(this.value) { img.src=this.value; img.classList.remove('hidden'); }
-       else img.classList.add('hidden');
-    });
-
-    // Dashboard & Chart
-    function initDashboard() {
-      addLog("> System initialized.");
-      
-      const ctx = document.getElementById('trafficChart').getContext('2d');
-      const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-      gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); 
-      gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
-
-      chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-          datasets: [{
-            label: 'Visits',
-            data: [12, 19, 3, 5, 2, 3, 15],
-            backgroundColor: gradient,
-            borderColor: '#10b981',
-            borderWidth: 2,
-            pointBackgroundColor: '#fff',
-            tension: 0.4,
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#94a3b8' } },
-            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-          }
-        }
+      callApi('saveSettings', formData).then((d) => {
+        renderSettings(d);
+        Swal.fire({ icon: 'success', title: '設定已儲存', timer: 1000, showConfirmButton: false, background: '#1e293b', color:'#fff' });
       });
-
-      setInterval(() => {
-        const viewEl = document.getElementById('dash-views');
-        let current = parseInt(viewEl.innerText.replace(/,/g, ''));
-        viewEl.innerText = (current + Math.floor(Math.random() * 2)).toLocaleString();
-      }, 5000);
-    }
-
-    function addLog(text) {
-      const t = document.getElementById('terminal-output');
-      const time = new Date().toLocaleTimeString('en-US', {hour12: false});
-      t.innerHTML += `<div><span class="text-slate-500">[${time}]</span> ${text}</div>`;
-      t.scrollTop = t.scrollHeight;
-    }
+    });
   </script>
 </body>
 </html>
