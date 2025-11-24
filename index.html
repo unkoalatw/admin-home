@@ -1,29 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-  <base target="_top">
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <!-- SortableJS (拖曳排序神器) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-  <!-- Chart.js (新增：圖表神器) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   
   <style>
     .tab-btn.active { border-bottom: 2px solid #10b981; color: #10b981; background: rgba(16, 185, 129, 0.05); }
     .tab-btn { color: #94a3b8; transition: all 0.3s; }
     .tab-btn:hover { color: #e2e8f0; background: rgba(255,255,255,0.02); }
-    
-    /* 拖曳中的樣式 */
-    .sortable-ghost { opacity: 0.4; background: #334155; }
-    .sortable-drag { cursor: grabbing; }
-    .handle { cursor: grab; }
-
-    /* 終端機打字效果 */
     .terminal-text { font-family: 'Courier New', Courier, monospace; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0f172a; }
@@ -32,81 +23,16 @@
 </head>
 <body class="bg-slate-800 text-slate-100 min-h-screen p-4 md:p-8 font-sans">
 
-  <!-- ========================================== -->
-  <!-- 模擬器 (預覽用) - 修復版 -->
-  <!-- ========================================== -->
+  <!-- ==================== CONFIGURATION ==================== -->
   <script>
-    if (typeof google === 'undefined') {
-      // 1. 定義模擬資料
-      const mockData = [
-         {id:'1', title:'我的作品集', url:'https://github.com', description:'展示我的程式碼專案', imageUrl:''}, 
-         {id:'2', title:'Instagram', url:'#', description:'生活紀錄', imageUrl:''}
-      ];
-      const mockSettings = {site_title: '我的主頁', bio_text: 'Hello World'};
-
-      // 2. 建立一個支援鏈式呼叫 (Chaining) 的 Mock Runner
-      const createMockRunner = () => {
-        const runner = {};
-        
-        // 模擬伺服器函式的回傳值
-        const serverFunctions = {
-          getData: () => mockData,
-          getSettingsMap: () => mockSettings,
-          saveOrder: () => [],
-          updateData: () => mockData,
-          addData: () => mockData,
-          deleteData: () => mockData,
-          saveSettings: () => mockSettings
-        };
-
-        // 綁定函式到 runner，並處理回呼
-        for (const [name, resultFn] of Object.entries(serverFunctions)) {
-          runner[name] = function(...args) {
-            console.log(`[Mock] Calling backend function: ${name}`, args);
-            // 模擬網路延遲
-            setTimeout(() => {
-              try {
-                const result = resultFn();
-                // 如果有設定成功回呼，則執行
-                if (this._successHandler) this._successHandler(result);
-              } catch (e) {
-                // 如果有設定失敗回呼，則執行
-                if (this._failureHandler) this._failureHandler(e);
-              }
-            }, 600);
-            return this; 
-          };
-        }
-
-        // 定義 handlers (關鍵修復：回傳 this 以支援連續呼叫)
-        runner.withSuccessHandler = function(fn) {
-          this._successHandler = fn;
-          return this; // 回傳自己，讓後面可以接 .withFailureHandler()
-        };
-
-        runner.withFailureHandler = function(fn) {
-          this._failureHandler = fn;
-          return this; // 回傳自己
-        };
-
-        return runner;
-      };
-
-      // 3. 注入 window.google
-      window.google = {
-        script: {
-          run: createMockRunner()
-        }
-      };
-      
-      console.warn("[Preview Mode] Mock Google Apps Script environment loaded.");
-    }
+    // 您的 GAS API 網址
+    const API_URL = "https://script.google.com/macros/s/AKfycbw1J5DNcuCTfTGeQXhosPZYOW0MAfXDCNBHIi7rQTQMw7Nrfieuc4XEw0diuQkQ6XdUPg/exec";
   </script>
-  <!-- ========================================== -->
+  <!-- ======================================================= -->
 
-  <div class="max-w-5xl mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
+  <div class="max-w-6xl mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
     
-    <!-- 頂部 Header -->
+    <!-- Header -->
     <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/90 backdrop-blur sticky top-0 z-10">
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 bg-gradient-to-tr from-emerald-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/20">
@@ -116,18 +42,17 @@
           Admin <span class="text-slate-500 font-normal">Console</span>
         </h1>
       </div>
-      
       <div class="flex items-center gap-3">
-        <span class="text-xs text-emerald-400 flex items-center gap-1.5 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20 animate-pulse">
-          <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span> Online
+        <span id="status-indicator" class="text-xs text-red-400 flex items-center gap-1.5 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">
+          <span class="w-1.5 h-1.5 bg-red-400 rounded-full"></span> Offline
         </span>
-        <a href="<?= ScriptApp.getService().getUrl() ?>" target="_blank" class="text-xs text-slate-400 hover:text-white transition">
-          <i class="fas fa-external-link-alt"></i>
-        </a>
+        <button onclick="logout()" class="text-xs text-slate-400 hover:text-white transition bg-slate-800 px-3 py-1 rounded border border-slate-700">
+          登出
+        </button>
       </div>
     </div>
 
-    <!-- Tab 切換 -->
+    <!-- Tabs -->
     <div class="flex border-b border-slate-700 bg-slate-800/30">
       <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active w-1/3 py-4 font-bold text-sm tracking-wide border-r border-slate-700/50">
         <i class="fas fa-chart-line mr-2"></i>儀表板
@@ -140,262 +65,336 @@
       </button>
     </div>
 
-    <!-- ================= 0. 儀表板 (酷東西區) ================= -->
+    <!-- 1. Dashboard -->
     <div id="view-dashboard" class="p-6 md:p-8 animate-fade-in">
-      
-      <!-- 數據卡片 -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <!-- Card 1 -->
-        <div class="bg-gradient-to-br from-slate-800 to-slate-800/50 p-5 rounded-2xl border border-slate-700 shadow-lg relative overflow-hidden group">
-          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition transform group-hover:scale-110">
-            <i class="fas fa-link text-6xl text-blue-500"></i>
-          </div>
+        <div class="bg-gradient-to-br from-slate-800 to-slate-800/50 p-5 rounded-2xl border border-slate-700 shadow-lg relative overflow-hidden">
+          <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fas fa-link text-6xl text-blue-500"></i></div>
           <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Active Links</h3>
-          <div class="text-3xl font-bold text-white flex items-end gap-2">
-            <span id="dash-total-links">0</span>
-            <span class="text-xs text-emerald-400 font-medium mb-1"><i class="fas fa-arrow-up"></i> 12%</span>
-          </div>
+          <div class="text-3xl font-bold text-white" id="dash-total-links">-</div>
         </div>
-
-        <!-- Card 2 -->
-        <div class="bg-gradient-to-br from-slate-800 to-slate-800/50 p-5 rounded-2xl border border-slate-700 shadow-lg relative overflow-hidden group">
-          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition transform group-hover:scale-110">
-            <i class="fas fa-eye text-6xl text-purple-500"></i>
-          </div>
-          <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Views (Mock)</h3>
-          <div class="text-3xl font-bold text-white flex items-end gap-2">
-            <span id="dash-views">1,204</span>
-            <span class="text-xs text-purple-400 font-medium mb-1 animate-pulse">● Live</span>
-          </div>
+        <div class="bg-gradient-to-br from-slate-800 to-slate-800/50 p-5 rounded-2xl border border-slate-700 shadow-lg relative overflow-hidden">
+          <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fas fa-eye text-6xl text-purple-500"></i></div>
+          <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Views</h3>
+          <div class="text-3xl font-bold text-white" id="dash-views">1,204</div>
         </div>
-
-        <!-- Card 3 -->
-        <div class="bg-gradient-to-br from-slate-800 to-slate-800/50 p-5 rounded-2xl border border-slate-700 shadow-lg relative overflow-hidden group">
-           <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition transform group-hover:scale-110">
-            <i class="fas fa-server text-6xl text-emerald-500"></i>
-          </div>
-          <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Server Status</h3>
-          <div class="text-3xl font-bold text-emerald-400 flex items-end gap-2">
-            99.9%
-            <span class="text-xs text-slate-500 font-medium mb-1">Uptime</span>
-          </div>
+        <div class="bg-gradient-to-br from-slate-800 to-slate-800/50 p-5 rounded-2xl border border-slate-700 shadow-lg relative overflow-hidden">
+          <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fas fa-server text-6xl text-emerald-500"></i></div>
+          <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">System Status</h3>
+          <div class="text-3xl font-bold text-emerald-400">Stable</div>
         </div>
       </div>
 
-      <!-- 圖表與終端機 -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- 左側：流量圖表 -->
         <div class="lg:col-span-2 bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-lg">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-slate-300 font-bold text-sm"><i class="fas fa-chart-area mr-2 text-blue-500"></i>流量趨勢 (模擬數據)</h3>
-            <select class="bg-slate-900 text-xs text-slate-400 border-none rounded px-2 py-1 outline-none">
-              <option>最近 7 天</option>
-              <option>最近 30 天</option>
-            </select>
-          </div>
-          <div class="h-64 w-full">
-            <canvas id="trafficChart"></canvas>
-          </div>
+          <div class="h-64 w-full"><canvas id="trafficChart"></canvas></div>
         </div>
-
-        <!-- 右側：系統 Log -->
         <div class="bg-black/80 p-4 rounded-2xl border border-slate-700 shadow-lg font-mono text-xs overflow-hidden flex flex-col">
           <div class="flex justify-between items-center mb-2 border-b border-slate-800 pb-2">
              <span class="text-slate-400">System Log</span>
              <span class="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
           </div>
-          <div id="terminal-output" class="flex-1 overflow-y-auto h-56 text-green-500/80 space-y-1 terminal-text">
-            <div>> System initialized...</div>
-            <div>> Connecting to Google Sheet DB...</div>
-            <div>> Authenticated as Admin.</div>
-          </div>
+          <div id="terminal-output" class="flex-1 overflow-y-auto h-56 text-green-500/80 space-y-1 terminal-text"></div>
         </div>
       </div>
-
     </div>
 
-    <!-- ================= 1. 卡片管理頁面 ================= -->
+    <!-- 2. Link Management -->
     <div id="view-cards" class="hidden p-6">
-      
-      <!-- 新增/編輯 表單 -->
       <div class="bg-slate-800/80 rounded-xl p-5 mb-8 border border-slate-700 shadow-lg">
         <div class="flex justify-between items-center mb-4">
           <h2 id="form-title" class="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
             <i class="fas fa-plus-circle"></i> 新增卡片
           </h2>
-          <button onclick="resetCardForm()" id="cancel-edit-btn" class="hidden text-xs text-slate-400 hover:text-white bg-slate-700 px-2 py-1 rounded">
-            <i class="fas fa-times"></i> 取消
-          </button>
+          <button onclick="resetCardForm()" id="cancel-edit-btn" class="hidden text-xs text-slate-400 hover:text-white bg-slate-700 px-2 py-1 rounded">取消</button>
         </div>
-        
         <form id="cardForm" class="space-y-4">
           <input type="hidden" name="id" id="field-id">
-          
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs text-slate-400 mb-1">標題</label>
-              <input type="text" name="title" id="field-title" required placeholder="例如：我的作品集" 
-                     class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
-            </div>
-            <div>
-              <label class="block text-xs text-slate-400 mb-1">連結 (URL)</label>
-              <input type="url" name="url" id="field-url" required placeholder="https://..." 
-                     class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
-            </div>
+            <input type="text" name="title" id="field-title" required placeholder="標題" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+            <input type="url" name="url" id="field-url" required placeholder="連結 URL" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
           </div>
-          
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">圖片網址 (Image URL)</label>
-            <div class="flex gap-2">
-               <input type="url" name="imageUrl" id="field-imageUrl" placeholder="https://..." 
-                      class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
-               <div class="w-10 h-10 bg-slate-900 rounded border border-slate-700 overflow-hidden flex-shrink-0 relative group">
-                  <img id="img-preview" src="" onerror="this.style.display='none'" class="w-full h-full object-cover" style="display:none">
-                  <div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center text-[10px] text-white">預覽</div>
-               </div>
-            </div>
+          <div class="flex gap-2">
+             <input type="url" name="imageUrl" id="field-imageUrl" placeholder="圖片 URL" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+             <div class="w-10 h-10 bg-slate-900 rounded border border-slate-700 overflow-hidden"><img id="img-preview" src="" onerror="this.style.display='none'" class="w-full h-full object-cover hidden"></div>
           </div>
-
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">描述</label>
-            <textarea name="description" id="field-description" rows="2" placeholder="簡單介紹內容..." 
-                      class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition resize-none"></textarea>
-          </div>
-
-          <button type="submit" id="submit-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg shadow-lg shadow-emerald-900/20 transition flex items-center justify-center gap-2">
-            <i class="fas fa-paper-plane"></i> 新增卡片
-          </button>
+          <textarea name="description" id="field-description" rows="2" placeholder="描述" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 resize-none"></textarea>
+          <button type="submit" id="submit-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg transition">新增卡片</button>
         </form>
       </div>
 
-      <!-- 列表區 -->
-      <div>
-        <div class="flex justify-between items-end mb-3 px-1">
-          <h3 class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-            <i class="fas fa-list-ul"></i> 目前列表 <span class="text-slate-600 font-normal ml-1 bg-slate-800 px-2 py-0.5 rounded text-[10px]">拖曳可排序</span>
-          </h3>
-          <span id="save-status" class="text-xs text-emerald-400 opacity-0 transition flex items-center gap-1">
-            <i class="fas fa-check-circle"></i> 已儲存
-          </span>
-        </div>
-        
-        <div id="card-list" class="space-y-2 pb-10">
-          <!-- 列表內容由 JS 生成 -->
-          <div class="text-center py-10 text-slate-500">載入中...</div>
-        </div>
+      <div class="flex justify-between items-end mb-3 px-1">
+        <h3 class="text-xs font-bold text-slate-500 uppercase">目前列表 <span class="ml-1 bg-slate-800 px-2 py-0.5 rounded text-[10px]">拖曳可排序</span></h3>
       </div>
+      <div id="card-list" class="space-y-2 pb-10"></div>
     </div>
 
-    <!-- ================= 2. 全站設定頁面 ================= -->
+    <!-- 3. Settings -->
     <div id="view-settings" class="hidden p-6">
       <form id="settingsForm" class="space-y-6">
-        
-        <!-- 基本資訊 -->
         <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700">
-          <h3 class="text-emerald-400 text-sm font-bold mb-4 uppercase"><i class="fas fa-id-card mr-2"></i>基本資料</h3>
+          <h3 class="text-emerald-400 text-sm font-bold mb-4 uppercase">基本資料</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-             <div>
-               <label class="block text-xs text-slate-400 mb-1">網站大標題</label>
-               <input type="text" name="site_title" placeholder="Hello, I'm Alex" class="w-full bg-slate-900 border-none rounded p-2.5 text-white focus:ring-2 focus:ring-blue-500 placeholder-slate-600">
-             </div>
-             <div>
-               <label class="block text-xs text-slate-400 mb-1">副標題 (Subtitle)</label>
-               <input type="text" name="site_subtitle" placeholder="Developer & Designer" class="w-full bg-slate-900 border-none rounded p-2.5 text-white focus:ring-2 focus:ring-blue-500 placeholder-slate-600">
-             </div>
+             <input type="text" name="site_title" placeholder="網站標題" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
+             <input type="text" name="site_subtitle" placeholder="打字機副標題 (用逗號分隔)" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
           </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">個人頭像 (Avatar URL)</label>
-            <input type="url" name="avatar_url" placeholder="https://..." class="w-full bg-slate-900 border-none rounded p-2.5 text-white focus:ring-2 focus:ring-blue-500 mb-4 placeholder-slate-600">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">個人簡介 (Bio)</label>
-            <textarea name="bio_text" placeholder="顯示在首頁的自我介紹..." class="w-full bg-slate-900 border-none rounded p-2.5 text-white h-24 resize-none focus:ring-2 focus:ring-blue-500 placeholder-slate-600"></textarea>
-          </div>
+          <input type="url" name="avatar_url" placeholder="頭像 URL" class="w-full bg-slate-900 border-none rounded p-2.5 text-white mb-4">
+          <textarea name="bio_text" placeholder="個人簡介" class="w-full bg-slate-900 border-none rounded p-2.5 text-white h-24 resize-none"></textarea>
         </div>
 
-        <!-- 社群連結 -->
         <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700">
-          <h3 class="text-blue-400 text-sm font-bold mb-4 uppercase"><i class="fas fa-share-alt mr-2"></i>社群連結</h3>
+          <h3 class="text-blue-400 text-sm font-bold mb-4 uppercase">社群連結</h3>
           <div class="space-y-3">
-             <div class="flex items-center bg-slate-900 rounded px-3 border border-slate-700 focus-within:border-blue-500 transition">
-                <i class="fab fa-github text-slate-400 w-6"></i>
-                <input type="text" name="github_username" placeholder="GitHub ID (例如: google)" class="bg-transparent border-none w-full p-2.5 text-white focus:outline-none placeholder-slate-600">
-             </div>
-             <div class="flex items-center bg-slate-900 rounded px-3 border border-slate-700 focus-within:border-blue-500 transition">
-                <i class="fab fa-instagram text-slate-400 w-6"></i>
-                <input type="url" name="instagram_url" placeholder="Instagram URL" class="bg-transparent border-none w-full p-2.5 text-white focus:outline-none placeholder-slate-600">
-             </div>
-             <div class="flex items-center bg-slate-900 rounded px-3 border border-slate-700 focus-within:border-blue-500 transition">
-                <i class="fab fa-twitter text-slate-400 w-6"></i>
-                <input type="url" name="twitter_url" placeholder="Twitter (X) URL" class="bg-transparent border-none w-full p-2.5 text-white focus:outline-none placeholder-slate-600">
-             </div>
-             <div class="flex items-center bg-slate-900 rounded px-3 border border-slate-700 focus-within:border-blue-500 transition">
-                <i class="fab fa-linkedin text-slate-400 w-6"></i>
-                <input type="url" name="linkedin_url" placeholder="LinkedIn URL" class="bg-transparent border-none w-full p-2.5 text-white focus:outline-none placeholder-slate-600">
-             </div>
+             <input type="text" name="github_username" placeholder="GitHub ID" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
+             <input type="url" name="instagram_url" placeholder="Instagram URL" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
+             <input type="url" name="twitter_url" placeholder="Twitter URL" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
+             <input type="url" name="linkedin_url" placeholder="LinkedIn URL" class="w-full bg-slate-900 border-none rounded p-2.5 text-white">
           </div>
         </div>
 
-        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-900/30 transition flex justify-center items-center gap-2 transform hover:-translate-y-0.5">
-          <i class="fas fa-save"></i> 儲存全站設定
-        </button>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition">儲存全站設定</button>
       </form>
     </div>
-
   </div>
 
   <script>
-    let password = '';
+    // 全域變數
+    let authToken = ''; 
     let chartInstance = null;
 
-    window.onload = function() {
-      // 偵測是否為 GAS 環境
-      if (typeof google === 'undefined' || window.location.href.indexOf('script.google.com') === -1) {
-        password = '1234'; 
-        initData();
-      } else {
-        Swal.fire({
-          title: '管理者登入',
-          input: 'password',
-          inputPlaceholder: '請輸入密碼',
-          inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
-          confirmButtonText: '登入',
-          confirmButtonColor: '#10b981',
-          allowOutsideClick: false,
-          background: '#1e293b',
-          color: '#fff'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            password = result.value;
-            initData();
-          }
-        });
+    // --- 核心：API 通訊 ---
+    async function callApi(action, payload = {}) {
+      if (!authToken) {
+        throw new Error("尚未登入");
       }
-    };
+      
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        // mode: 'no-cors' <-- 已移除，為了能讀取回傳值
+        body: JSON.stringify({
+          action: action,
+          password: authToken,
+          payload: payload
+        })
+      });
 
-    function initData() {
-      loadCards();
-      loadSettings();
-      initDashboard(); // 初始化儀表板
+      const result = await response.json(); 
+      if (result.status === 'error') throw new Error(result.message);
+      return result.data;
     }
 
-    // --- Tab 切換 ---
+    // --- 初始化 ---
+    window.onload = async function() {
+      await login();
+    };
+
+    async function login() {
+      const { value: password } = await Swal.fire({
+        title: '後台登入',
+        input: 'password',
+        inputPlaceholder: '請輸入密碼',
+        confirmButtonText: '登入',
+        confirmButtonColor: '#10b981',
+        allowOutsideClick: false,
+        background: '#1e293b',
+        color: '#fff',
+        preConfirm: async (pw) => {
+          try {
+            // 先用 GET 測試密碼
+            const res = await fetch(`${API_URL}?type=verify&password=${pw}`);
+            const data = await res.json();
+            if (data.status !== 'success') throw new Error();
+            return pw;
+          } catch (error) {
+            Swal.showValidationMessage('密碼錯誤或連線失敗');
+          }
+        }
+      });
+
+      if (password) {
+        authToken = password;
+        updateStatus(true);
+        addLog("> Authentication successful.");
+        initData();
+      }
+    }
+    
+    function logout() {
+      authToken = '';
+      location.reload();
+    }
+
+    function updateStatus(isOnline) {
+      const el = document.getElementById('status-indicator');
+      if(isOnline) {
+        el.innerHTML = '<span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Online';
+        el.className = 'text-xs text-emerald-400 flex items-center gap-1.5 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20';
+      }
+    }
+
+    async function initData() {
+      initDashboard();
+      
+      // 載入資料 (使用 GET)
+      try {
+        const res = await fetch(`${API_URL}?type=api`);
+        const result = await res.json();
+        
+        renderCards(result.data);
+        renderSettings(result.settings);
+        
+        document.getElementById('dash-total-links').innerText = result.data.length;
+        addLog(`> Loaded ${result.data.length} links.`);
+      } catch (e) {
+        addLog("> Error loading initial data.");
+        console.error(e);
+      }
+    }
+
+    // --- Tab Logic ---
     function switchTab(tabName) {
       document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
       document.getElementById(`view-${tabName}`).classList.remove('hidden');
-      
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
       document.getElementById(`tab-${tabName}`).classList.add('active');
     }
 
-    // --- 儀表板與圖表邏輯 (酷東西) ---
+    // --- Card Logic ---
+    function renderCards(data) {
+      const container = document.getElementById('card-list');
+      container.innerHTML = '';
+      
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div class="text-center text-slate-500 py-10">尚無資料</div>';
+        return;
+      }
+
+      data.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-slate-800 p-3 rounded-lg border border-slate-700 flex items-center gap-4 group';
+        div.setAttribute('data-id', item.id);
+        div.innerHTML = `
+          <div class="handle text-slate-500 cursor-grab px-2"><i class="fas fa-grip-vertical"></i></div>
+          <img src="${item.imageUrl || ''}" class="w-10 h-10 rounded bg-slate-900 object-cover" onerror="this.style.display='none'">
+          <div class="flex-1 truncate text-sm text-slate-300 font-bold">${item.title}</div>
+          <div class="flex gap-2">
+            <button onclick='editCard(${JSON.stringify(item)})' class="text-blue-400 p-2"><i class="fas fa-pen"></i></button>
+            <button onclick="deleteCard('${item.id}')" class="text-red-400 p-2"><i class="fas fa-trash"></i></button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      new Sortable(container, {
+        handle: '.handle',
+        animation: 150,
+        onEnd: () => {
+          const ids = Array.from(container.children).map(el => el.getAttribute('data-id'));
+          performAction('saveOrder', { ids: ids }, '排序已儲存');
+        }
+      });
+    }
+
+    async function performAction(action, payload, successMsg) {
+      try {
+        Swal.showLoading();
+        const newData = await callApi(action, payload);
+        
+        // 如果是 Settings，API 回傳的是物件；如果是 Data 操作，API 回傳的是陣列
+        if (action === 'saveSettings') {
+           renderSettings(newData);
+        } else {
+           renderCards(newData);
+        }
+        
+        Swal.fire({ icon: 'success', title: successMsg, timer: 1000, showConfirmButton: false, background: '#1e293b', color:'#fff' });
+        addLog(`> Action ${action} completed.`);
+      } catch (e) {
+        Swal.fire({ icon: 'error', title: '錯誤', text: e.message, background: '#1e293b', color:'#fff' });
+        addLog(`> Error: ${e.message}`);
+      }
+    }
+
+    // Card Form
+    document.getElementById('cardForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const id = document.getElementById('field-id').value;
+      const payload = {
+        id: id,
+        title: this.title.value,
+        url: this.url.value,
+        imageUrl: this.imageUrl.value,
+        description: this.description.value
+      };
+      
+      if (id) performAction('updateData', payload, '更新成功');
+      else performAction('addData', payload, '新增成功');
+      
+      resetCardForm();
+    });
+
+    function deleteCard(id) {
+      Swal.fire({
+        title: '確定刪除?', icon: 'warning', showCancelButton: true, confirmButtonText: '刪除', confirmButtonColor: '#ef4444', background: '#1e293b', color:'#fff'
+      }).then((r) => {
+        if(r.isConfirmed) performAction('deleteData', {id: id}, '已刪除');
+      });
+    }
+
+    function editCard(item) {
+      document.getElementById('field-id').value = item.id;
+      document.getElementById('field-title').value = item.title;
+      document.getElementById('field-url').value = item.url;
+      document.getElementById('field-imageUrl').value = item.imageUrl;
+      document.getElementById('field-description').value = item.description;
+      
+      const img = document.getElementById('img-preview');
+      if(item.imageUrl) { img.src=item.imageUrl; img.classList.remove('hidden'); }
+      
+      document.getElementById('submit-btn').textContent = '更新卡片';
+      document.getElementById('submit-btn').className = 'w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-lg transition';
+      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+    }
+
+    function resetCardForm() {
+      document.getElementById('cardForm').reset();
+      document.getElementById('field-id').value = '';
+      document.getElementById('img-preview').classList.add('hidden');
+      document.getElementById('submit-btn').textContent = '新增卡片';
+      document.getElementById('submit-btn').className = 'w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg transition';
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
+    }
+
+    // Settings
+    function renderSettings(s) {
+      const form = document.getElementById('settingsForm');
+      for (const key in s) {
+        if (form[key]) form[key].value = s[key];
+      }
+    }
+
+    document.getElementById('settingsForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = {};
+      new FormData(this).forEach((v, k) => formData[k] = v);
+      performAction('saveSettings', formData, '設定已儲存');
+    });
+
+    // Preview Image Logic
+    document.getElementById('field-imageUrl').addEventListener('input', function() {
+       const img = document.getElementById('img-preview');
+       if(this.value) { img.src=this.value; img.classList.remove('hidden'); }
+       else img.classList.add('hidden');
+    });
+
+    // Dashboard & Chart
     function initDashboard() {
-      // 1. 初始化 Chart.js
+      addLog("> System initialized.");
+      
       const ctx = document.getElementById('trafficChart').getContext('2d');
       const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-      gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); // Blue start
-      gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');   // Transparent end
+      gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); 
+      gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
 
       chartInstance = new Chart(ctx, {
         type: 'line',
@@ -405,10 +404,10 @@
             label: 'Visits',
             data: [12, 19, 3, 5, 2, 3, 15],
             backgroundColor: gradient,
-            borderColor: '#3b82f6',
+            borderColor: '#10b981',
             borderWidth: 2,
             pointBackgroundColor: '#fff',
-            tension: 0.4, // 平滑曲線
+            tension: 0.4,
             fill: true
           }]
         },
@@ -423,196 +422,19 @@
         }
       });
 
-      // 2. 模擬終端機日誌
-      addLog("> Dashboard module loaded.");
-      setInterval(() => {
-        const events = ["Checking link health...", "Syncing with GitHub...", "Backing up data...", "Visitor from TW detected.", "Optimizing database..."];
-        const randomEvent = events[Math.floor(Math.random() * events.length)];
-        addLog(`> ${randomEvent}`);
-      }, 3500);
-
-      // 3. 模擬數字跳動
       setInterval(() => {
         const viewEl = document.getElementById('dash-views');
         let current = parseInt(viewEl.innerText.replace(/,/g, ''));
-        viewEl.innerText = (current + Math.floor(Math.random() * 3)).toLocaleString();
+        viewEl.innerText = (current + Math.floor(Math.random() * 2)).toLocaleString();
       }, 5000);
     }
 
     function addLog(text) {
-      const terminal = document.getElementById('terminal-output');
-      const div = document.createElement('div');
+      const t = document.getElementById('terminal-output');
       const time = new Date().toLocaleTimeString('en-US', {hour12: false});
-      div.innerHTML = `<span class="text-slate-600">[${time}]</span> ${text}`;
-      terminal.appendChild(div);
-      terminal.scrollTop = terminal.scrollHeight;
+      t.innerHTML += `<div><span class="text-slate-500">[${time}]</span> ${text}</div>`;
+      t.scrollTop = t.scrollHeight;
     }
-
-    // --- 卡片功能 ---
-    function loadCards() {
-      google.script.run.withSuccessHandler(data => {
-        renderCards(data);
-        // 更新儀表板數據
-        if(data) {
-           document.getElementById('dash-total-links').innerText = data.length;
-           addLog(`> Loaded ${data.length} links from database.`);
-        }
-      }).getData();
-    }
-
-    function renderCards(data) {
-      const container = document.getElementById('card-list');
-      container.innerHTML = '';
-      
-      if (!data || data.length === 0) {
-        container.innerHTML = '<div class="text-center py-8 text-slate-500 border border-dashed border-slate-700 rounded-lg">尚無卡片資料</div>';
-        return;
-      }
-
-      data.forEach(item => {
-        const el = document.createElement('div');
-        el.className = 'group bg-slate-800 p-3 rounded-lg border border-slate-700 flex items-center gap-4 hover:border-slate-500 transition shadow-sm select-none';
-        el.setAttribute('data-id', item.id);
-        el.innerHTML = `
-          <div class="handle text-slate-500 hover:text-white px-2 cursor-grab active:cursor-grabbing">
-            <i class="fas fa-grip-vertical"></i>
-          </div>
-          <div class="w-12 h-12 bg-slate-900 rounded overflow-hidden flex-shrink-0 border border-slate-700">
-            <img src="${item.imageUrl || ''}" onerror="this.style.display='none'" class="w-full h-full object-cover">
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="font-bold text-slate-200 truncate">${item.title}</div>
-            <div class="text-xs text-slate-500 truncate">${item.url}</div>
-          </div>
-          <div class="flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onclick='editCard(${JSON.stringify(item)})' class="p-2 text-blue-400 hover:bg-blue-900/30 rounded transition" title="編輯">
-              <i class="fas fa-pen"></i>
-            </button>
-            <button onclick="deleteCard('${item.id}')" class="p-2 text-red-400 hover:bg-red-900/30 rounded transition" title="刪除">
-              <i class="fas fa-trash-alt"></i>
-            </button>
-          </div>
-        `;
-        container.appendChild(el);
-      });
-
-      new Sortable(container, {
-        animation: 150,
-        handle: '.handle',
-        ghostClass: 'sortable-ghost',
-        dragClass: 'sortable-drag',
-        onEnd: function () { saveOrder(); }
-      });
-    }
-
-    function saveOrder() {
-      const container = document.getElementById('card-list');
-      const ids = Array.from(container.children).map(el => el.getAttribute('data-id'));
-      const statusEl = document.getElementById('save-status');
-      statusEl.style.opacity = "1";
-      
-      google.script.run.withSuccessHandler(() => {
-        setTimeout(() => { statusEl.style.opacity = "0"; }, 2000);
-        addLog("> Reordered items successfully.");
-      }).saveOrder(ids, password);
-    }
-
-    function editCard(item) {
-      document.getElementById('field-id').value = item.id;
-      document.getElementById('field-title').value = item.title;
-      document.getElementById('field-url').value = item.url;
-      document.getElementById('field-imageUrl').value = item.imageUrl;
-      document.getElementById('field-description').value = item.description;
-      
-      const imgPreview = document.getElementById('img-preview');
-      if(item.imageUrl) { imgPreview.src = item.imageUrl; imgPreview.style.display = 'block'; }
-      
-      document.getElementById('form-title').innerHTML = '<i class="fas fa-edit"></i> 編輯卡片';
-      document.getElementById('form-title').className = 'text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2';
-      document.getElementById('submit-btn').innerHTML = '<i class="fas fa-save"></i> 更新卡片';
-      document.getElementById('submit-btn').className = 'w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2';
-      document.getElementById('cancel-edit-btn').classList.remove('hidden');
-      
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function resetCardForm() {
-      document.getElementById('cardForm').reset();
-      document.getElementById('field-id').value = '';
-      document.getElementById('img-preview').style.display = 'none';
-      
-      document.getElementById('form-title').innerHTML = '<i class="fas fa-plus-circle"></i> 新增卡片';
-      document.getElementById('form-title').className = 'text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2';
-      document.getElementById('submit-btn').innerHTML = '<i class="fas fa-paper-plane"></i> 新增卡片';
-      document.getElementById('submit-btn').className = 'w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg shadow-lg shadow-emerald-900/20 transition flex items-center justify-center gap-2';
-      document.getElementById('cancel-edit-btn').classList.add('hidden');
-    }
-
-    document.getElementById('cardForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const id = document.getElementById('field-id').value;
-      const formData = {
-        id: id,
-        title: this.title.value,
-        url: this.url.value,
-        imageUrl: this.imageUrl.value,
-        description: this.description.value,
-        password: password
-      };
-
-      Swal.fire({ title: '處理中...', didOpen: () => Swal.showLoading(), background: '#1e293b', color: '#fff' });
-
-      const handler = google.script.run.withSuccessHandler((data) => {
-        Swal.fire({ icon: 'success', title: '成功', timer: 1000, showConfirmButton: false, background: '#1e293b', color: '#fff' });
-        resetCardForm();
-        renderCards(data);
-        addLog(id ? "> Updated link data." : "> Created new link entry.");
-      }).withFailureHandler(err => Swal.fire('錯誤', err.message, 'error'));
-
-      if (id) handler.updateData(formData);
-      else handler.addData(formData);
-    });
-
-    function deleteCard(id) {
-      Swal.fire({
-        title: '確定刪除?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b', confirmButtonText: '刪除', background: '#1e293b', color: '#fff'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          google.script.run.withSuccessHandler(renderCards).deleteData(id, password);
-          addLog(`> Deleted item ID: ${id}`);
-        }
-      });
-    }
-
-    // --- 設定功能 ---
-    function loadSettings() {
-      google.script.run.withSuccessHandler(settings => {
-        const form = document.getElementById('settingsForm');
-        for (const key in settings) {
-          if (form[key]) form[key].value = settings[key];
-        }
-        addLog("> System settings loaded.");
-      }).getSettingsMap();
-    }
-
-    document.getElementById('settingsForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const formData = { password: password };
-      new FormData(this).forEach((value, key) => formData[key] = value);
-
-      Swal.fire({ title: '儲存中...', didOpen: () => Swal.showLoading(), background: '#1e293b', color: '#fff' });
-      
-      google.script.run.withSuccessHandler(() => {
-        Swal.fire({ icon: 'success', title: '設定已更新', timer: 1500, showConfirmButton: false, background: '#1e293b', color: '#fff' });
-        addLog("> Global settings updated.");
-      }).withFailureHandler(err => Swal.fire('錯誤', err.message, 'error')).saveSettings(formData);
-    });
-
-    document.getElementById('field-imageUrl').addEventListener('input', function() {
-      const img = document.getElementById('img-preview');
-      if(this.value) { img.src = this.value; img.style.display = 'block'; } 
-      else { img.style.display = 'none'; }
-    });
   </script>
 </body>
 </html>
