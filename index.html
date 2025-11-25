@@ -274,8 +274,14 @@
       updateLoader(0, "WAITING FOR AUTH...");
       const { value: formValues } = await Swal.fire({
         title: 'SECURE LOGIN',
-        html: `<input id="swal-pass" class="swal2-input" placeholder="Password" type="password"><input id="swal-2fa" class="swal2-input" placeholder="2FA Code (6-digit)" type="text" maxlength="6">`,
-        focusConfirm: false, confirmButtonText: 'UNLOCK', confirmButtonColor: '#10b981', allowOutsideClick: false, background: '#0f172a',
+        // 修改 placeholder 提示使用者可以用備份碼
+        // 修改 maxlength 為 8 以支援備份碼
+        html: `<input id="swal-pass" class="swal2-input" placeholder="Password" type="password"><input id="swal-2fa" class="swal2-input" placeholder="2FA / Backup Code" type="text" maxlength="8">`,
+        focusConfirm: false, 
+        confirmButtonText: 'UNLOCK', 
+        confirmButtonColor: '#10b981', 
+        allowOutsideClick: false, 
+        background: '#0f172a',
         preConfirm: () => { return [document.getElementById('swal-pass').value, document.getElementById('swal-2fa').value] }
       });
 
