@@ -21,6 +21,10 @@
     /* === 全局樣式 === */
     body { background-color: #0a0a0a; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; cursor: none; }
     .swal2-container { z-index: 100000 !important; }
+    .swal2-popup { background: #0f172a !important; border: 1px solid #334155; }
+    .swal2-title { color: #fff !important; }
+    .swal2-input { background: #1e293b !important; color: #fff !important; border: 1px solid #475569 !important; text-align: center; letter-spacing: 2px; }
+    
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: #0a0a0a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -61,18 +65,24 @@
     #preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 99999; display: flex; justify-content: center; align-items: center; transition: opacity 0.8s; }
     .loader-bar { width: 200px; height: 2px; background: #1e293b; margin-top: 20px; overflow: hidden; position: relative; }
     .loader-progress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: #10b981; transition: width 0.3s; box-shadow: 0 0 10px #10b981; }
+
+    .list-item { transition: transform 0.2s, background 0.2s; }
+    .list-item:hover { background: rgba(255, 255, 255, 0.05); transform: translateX(5px); }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
+  <!-- ==================== CONFIGURATION ==================== -->
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbw1J5DNcuCTfTGeQXhosPZYOW0MAfXDCNBHIi7rQTQMw7Nrfieuc4XEw0diuQkQ6XdUPg/exec";
   </script>
+  <!-- ======================================================= -->
 
+  <!-- Preloader -->
   <div id="preloader">
     <div class="loader-content text-center">
       <div class="text-3xl font-bold text-white tracking-widest mb-2 font-mono">ADMIN CONSOLE</div>
-      <div class="text-xs text-slate-500 font-mono mb-4" id="loader-text">WAITING FOR LOGIN...</div>
+      <div class="text-xs text-slate-500 font-mono mb-4" id="loader-text">SECURE LOGIN REQUIRED</div>
       <div class="loader-bar"><div class="loader-progress" id="loader-progress"></div></div>
     </div>
   </div>
@@ -86,15 +96,19 @@
     <div class="glass-panel rounded-2xl p-1 mb-6 cursor-hover">
       <div class="px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-white/5">
         <div class="flex items-center gap-4">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10"><i class="fas fa-terminal text-lg"></i></div>
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10"><i class="fas fa-shield-alt text-lg"></i></div>
           <div>
-            <h1 class="text-lg font-bold tracking-wide text-white">SYSTEM CORE</h1>
-            <div class="flex items-center gap-2 text-xs text-slate-400"><span id="status-dot" class="w-2 h-2 rounded-full bg-red-500"></span><span id="status-text">Disconnected</span> <span class="mx-1">|</span> <span id="version-tag" class="font-mono opacity-50">v...</span></div>
+            <h1 class="text-lg font-bold tracking-wide text-white">SECURE CORE</h1>
+            <div class="flex items-center gap-2 text-xs text-slate-400"><span id="status-dot" class="w-2 h-2 rounded-full bg-red-500"></span><span id="status-text">Locked</span> <span class="mx-1">|</span> <span id="version-tag" class="font-mono opacity-50">v...</span></div>
           </div>
         </div>
         <div class="flex gap-3">
-          <a href="index.html" target="_blank" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center gap-2 cursor-hover"><i class="fas fa-external-link-alt"></i> 預覽前台</a>
-          <button onclick="logout()" class="px-4 py-2 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition border border-red-500/20 cursor-hover"><i class="fas fa-power-off mr-1"></i> 登出</button>
+          <a href="https://unkoalatw.github.io/home" target="_blank" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center gap-2 cursor-hover">
+            <i class="fas fa-external-link-alt"></i> 預覽前台
+          </a>
+          <button onclick="logout()" class="px-4 py-2 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition border border-red-500/20 cursor-hover">
+            <i class="fas fa-power-off mr-1"></i> 登出
+          </button>
         </div>
       </div>
       <div class="flex text-sm font-medium">
@@ -113,38 +127,47 @@
           <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Total Links</h3>
           <div class="text-4xl font-bold text-white" id="dash-total-links">-</div>
         </div>
-        <!-- ... other stats ... -->
         <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group cursor-hover">
           <div class="absolute top-0 right-0 p-6 opacity-10 transition group-hover:scale-110"><i class="fas fa-comments text-5xl text-indigo-400"></i></div>
           <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Messages</h3>
           <div class="text-4xl font-bold text-white" id="dash-msg-count">0</div>
         </div>
+        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group cursor-hover">
+          <div class="absolute top-0 right-0 p-6 opacity-10 transition group-hover:scale-110"><i class="fas fa-server text-5xl text-blue-400"></i></div>
+          <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">System Status</h3>
+          <div class="text-4xl font-bold text-emerald-400">Stable</div>
+        </div>
+      </div>
+      <!-- Charts & Logs -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 glass-panel p-6 rounded-2xl">
+          <h3 class="text-slate-400 text-xs font-bold uppercase mb-4">Traffic Overview</h3>
+          <div class="h-64"><canvas id="trafficChart"></canvas></div>
+        </div>
+        <div class="glass-panel p-6 rounded-2xl flex flex-col">
+          <div class="flex justify-between items-center mb-4 border-b border-white/5 pb-2">
+            <h3 class="text-slate-400 text-xs font-bold uppercase">System Log</h3>
+            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+          </div>
+          <div id="terminal-output" class="flex-1 overflow-y-auto h-56 pr-2 font-mono text-xs text-green-500">
+            <div>> System initialized.</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- ★★★ 2. Chat Center ★★★ -->
+    <!-- 2. Chat Center -->
     <div id="view-chat" class="hidden h-[600px] flex gap-6 animate-fade-in">
-      <!-- Session List -->
       <div class="w-1/3 glass-panel rounded-2xl overflow-hidden flex flex-col">
-        <div class="p-4 border-b border-white/10 bg-white/5">
-          <h3 class="font-bold text-white">對話列表</h3>
-        </div>
-        <div id="chat-sessions" class="flex-1 overflow-y-auto">
-          <div class="text-center text-slate-500 mt-10">載入中...</div>
-        </div>
+        <div class="p-4 border-b border-white/10 bg-white/5"><h3 class="font-bold text-white">對話列表</h3></div>
+        <div id="chat-sessions" class="flex-1 overflow-y-auto"><div class="text-center text-slate-500 mt-10">載入中...</div></div>
         <button onclick="loadChatSessions()" class="p-3 text-center text-sm text-emerald-400 hover:bg-emerald-500/10 border-t border-white/10 cursor-hover"><i class="fas fa-sync-alt"></i> 重新整理</button>
       </div>
-      
-      <!-- Chat Window -->
       <div class="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden relative">
         <div class="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-          <div>
-             <h3 class="font-bold text-white" id="current-chat-id">請選擇對話</h3>
-             <div class="text-xs text-slate-500" id="current-chat-time"></div>
-          </div>
+          <div><h3 class="font-bold text-white" id="current-chat-id">請選擇對話</h3><div class="text-xs text-slate-500" id="current-chat-time"></div></div>
         </div>
         <div id="chat-history" class="flex-1 overflow-y-auto p-6 flex flex-col gap-2 bg-black/20">
-           <!-- Messages go here -->
            <div class="text-center text-slate-600 mt-20">👈 從左側選擇訪客以檢視訊息</div>
         </div>
         <div class="p-4 border-t border-white/10 bg-white/5 flex gap-2">
@@ -156,56 +179,29 @@
 
     <!-- 3. Card Management -->
     <div id="view-cards" class="hidden space-y-6 animate-fade-in">
-      <!-- Edit Form -->
-        <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-emerald-500">
-          <div class="flex justify-between items-center mb-6">
-            <h2 id="form-title" class="text-lg font-bold text-white flex items-center gap-2">
-              <i class="fas fa-plus-circle text-emerald-400"></i> 新增卡片
-            </h2>
-            <button onclick="resetCardForm()" id="cancel-edit-btn" class="hidden text-xs text-slate-400 hover:text-white px-3 py-1 rounded border border-slate-600 hover:bg-slate-700 cursor-hover">取消編輯</button>
-          </div>
-          
-          <form id="cardForm" class="space-y-5">
-            <input type="hidden" name="id" id="field-id">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div class="space-y-1">
-                <label class="text-xs text-slate-400 ml-1">標題</label>
-                <input type="text" name="title" id="field-title" required placeholder="Project Title" class="glass-input w-full rounded-lg px-4 py-3">
-              </div>
-              <div class="space-y-1">
-                <label class="text-xs text-slate-400 ml-1">連結 (URL)</label>
-                <input type="url" name="url" id="field-url" required placeholder="https://..." class="glass-input w-full rounded-lg px-4 py-3">
-              </div>
-            </div>
-            
-            <div class="space-y-1">
-              <label class="text-xs text-slate-400 ml-1">圖片 (Image URL)</label>
-              <div class="flex gap-4">
-                <input type="url" name="imageUrl" id="field-imageUrl" placeholder="https://..." class="glass-input flex-1 rounded-lg px-4 py-3">
-                <div class="w-12 h-12 rounded-lg bg-black/30 border border-white/10 overflow-hidden flex-shrink-0 relative group">
-                  <img id="img-preview" src="" onerror="this.style.display='none'" class="w-full h-full object-cover hidden">
-                  <div class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-500 bg-black/60 opacity-0 group-hover:opacity-100 transition">預覽</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="space-y-1">
-              <label class="text-xs text-slate-400 ml-1">描述</label>
-              <textarea name="description" id="field-description" rows="2" placeholder="Brief description..." class="glass-input w-full rounded-lg px-4 py-3 resize-none"></textarea>
-            </div>
-
-            <button type="submit" id="submit-btn" class="btn-primary w-full py-3 rounded-xl font-bold text-white flex justify-center items-center gap-2 mt-2 cursor-hover">
-              <i class="fas fa-save"></i> 儲存卡片
-            </button>
-          </form>
+      <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-emerald-500">
+        <div class="flex justify-between items-center mb-6">
+          <h2 id="form-title" class="text-lg font-bold text-white flex items-center gap-2"><i class="fas fa-plus-circle text-emerald-400"></i> 新增卡片</h2>
+          <button onclick="resetCardForm()" id="cancel-edit-btn" class="hidden text-xs text-slate-400 hover:text-white px-3 py-1 rounded border border-slate-600 hover:bg-slate-700 cursor-hover">取消編輯</button>
         </div>
+        <form id="cardForm" class="space-y-5">
+          <input type="hidden" name="id" id="field-id">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="space-y-1"><label class="text-xs text-slate-400 ml-1">標題</label><input type="text" name="title" id="field-title" required placeholder="Project Title" class="glass-input w-full rounded-lg px-4 py-3"></div>
+            <div class="space-y-1"><label class="text-xs text-slate-400 ml-1">連結 (URL)</label><input type="url" name="url" id="field-url" required placeholder="https://..." class="glass-input w-full rounded-lg px-4 py-3"></div>
+          </div>
+          <div class="space-y-1"><label class="text-xs text-slate-400 ml-1">圖片 (Image URL)</label><div class="flex gap-4"><input type="url" name="imageUrl" id="field-imageUrl" placeholder="https://..." class="glass-input flex-1 rounded-lg px-4 py-3"><div class="w-12 h-12 rounded-lg bg-black/30 border border-white/10 overflow-hidden flex-shrink-0 relative group"><img id="img-preview" src="" onerror="this.style.display='none'" class="w-full h-full object-cover hidden"><div class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-500 bg-black/60 opacity-0 group-hover:opacity-100 transition">預覽</div></div></div></div>
+          <div class="space-y-1"><label class="text-xs text-slate-400 ml-1">描述</label><textarea name="description" id="field-description" rows="2" placeholder="Brief description..." class="glass-input w-full rounded-lg px-4 py-3 resize-none"></textarea></div>
+          <button type="submit" id="submit-btn" class="btn-primary w-full py-3 rounded-xl font-bold text-white flex justify-center items-center gap-2 mt-2 cursor-hover"><i class="fas fa-save"></i> 儲存卡片</button>
+        </form>
+      </div>
       <div class="glass-panel p-6 rounded-2xl">
         <div class="flex justify-between items-end mb-4 px-1"><h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">目前列表</h3><span class="text-[10px] bg-white/5 text-slate-400 px-2 py-1 rounded border border-white/5"><i class="fas fa-arrows-alt mr-1"></i> 拖曳排序</span></div>
         <div id="card-list" class="space-y-3 pb-4"></div>
       </div>
     </div>
 
-    <!-- 4. Settings (Updated with New Links) -->
+    <!-- 4. Settings -->
     <div id="view-settings" class="hidden space-y-6 animate-fade-in">
       <form id="settingsForm" class="space-y-6">
         <div class="glass-panel p-6 rounded-2xl">
@@ -217,7 +213,6 @@
           <div class="space-y-1 mb-6"><label class="text-xs text-slate-400 ml-1">頭像 URL</label><input type="url" name="avatar_url" class="glass-input w-full rounded-lg px-4 py-3"></div>
           <div class="space-y-1"><label class="text-xs text-slate-400 ml-1">個人簡介</label><textarea name="bio_text" class="glass-input w-full rounded-lg px-4 py-3 h-24 resize-none"></textarea></div>
         </div>
-
         <div class="glass-panel p-6 rounded-2xl">
           <h3 class="text-indigo-400 text-sm font-bold mb-6 uppercase border-b border-white/5 pb-2">社群連結</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -231,18 +226,15 @@
              <div class="relative"><i class="fas fa-globe absolute left-4 top-3.5 text-slate-500"></i><input type="url" name="website_url" placeholder="Personal Website URL" class="glass-input w-full rounded-lg pl-10 pr-4 py-3"></div>
           </div>
         </div>
-
-        <button type="submit" class="btn-primary w-full py-4 rounded-xl font-bold text-white text-lg flex justify-center items-center gap-2 shadow-lg cursor-hover">
-          <i class="fas fa-check-circle"></i> 儲存全站設定
-        </button>
+        <button type="submit" class="btn-primary w-full py-4 rounded-xl font-bold text-white text-lg flex justify-center items-center gap-2 shadow-lg cursor-hover"><i class="fas fa-check-circle"></i> 儲存全站設定</button>
       </form>
     </div>
-
   </main>
 
   <script>
-    let authToken = '';
+    let sessionToken = localStorage.getItem('admin_session_token');
     let currentSessionId = null;
+    let chartInstance = null;
 
     function updateLoader(percent, text) {
       document.getElementById('loader-progress').style.width = percent + '%';
@@ -256,173 +248,168 @@
     });
 
     async function callApi(action, payload = {}) {
-      if (!authToken) throw new Error("請先登入");
+      if (!sessionToken) throw new Error("Session expired");
       const response = await fetch(API_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: action, password: authToken, payload: payload })
+        body: JSON.stringify({ action: action, token: sessionToken, payload: payload })
       });
       const result = await response.json();
-      if (result.version) document.getElementById('version-tag').innerText = result.version;
       if (result.status === 'error') throw new Error(result.message);
       return result.data;
     }
 
     window.onload = async () => {
-      updateLoader(0, "WAITING FOR LOGIN...");
-      initFluidCursor();
-      initClickRipple();
-      await login();
+      initCursor();
+      if (sessionToken) {
+        updateLoader(50, "VERIFYING SESSION...");
+        try {
+          const res = await fetch(`${API_URL}?type=check_session&token=${sessionToken}`);
+          const data = await res.json();
+          if (data.status === 'success') { initSystem(); } else { throw new Error(); }
+        } catch (e) { sessionToken = null; login(); }
+      } else { login(); }
     };
 
     async function login() {
-      const { value: password } = await Swal.fire({
-        title: 'SYSTEM ACCESS', input: 'password', inputPlaceholder: 'Enter Password', confirmButtonText: 'AUTHENTICATE',
-        confirmButtonColor: '#10b981', allowOutsideClick: false, background: '#0f172a', color: '#fff',
-        backdrop: `rgba(0,0,0,0.8)`, customClass: { input: 'text-center font-mono tracking-widest bg-slate-800 border-slate-600 text-white' }
+      updateLoader(0, "WAITING FOR AUTH...");
+      const { value: formValues } = await Swal.fire({
+        title: 'SECURE LOGIN',
+        html: `<input id="swal-pass" class="swal2-input" placeholder="Password" type="password"><input id="swal-2fa" class="swal2-input" placeholder="2FA Code (6-digit)" type="text" maxlength="6">`,
+        focusConfirm: false, confirmButtonText: 'UNLOCK', confirmButtonColor: '#10b981', allowOutsideClick: false, background: '#0f172a',
+        preConfirm: () => { return [document.getElementById('swal-pass').value, document.getElementById('swal-2fa').value] }
       });
-      if (password) {
+
+      if (formValues) {
+        const [password, code] = formValues;
+        updateLoader(50, "AUTHENTICATING...");
         try {
-          Swal.showLoading();
-          const res = await fetch(`${API_URL}?type=verify&password=${password}`);
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'login', payload: { password: password, code: code } })
+          });
           const data = await res.json();
           if (data.status === 'success') {
-            authToken = password;
-            updateStatus(true);
-            if(data.version) document.getElementById('version-tag').innerText = data.version;
-            updateLoader(50, "FETCHING DATA...");
-            Swal.close();
-            initData();
+            sessionToken = data.token;
+            localStorage.setItem('admin_session_token', sessionToken);
+            initSystem();
           } else {
             Swal.fire({ icon: 'error', title: 'ACCESS DENIED', text: data.message, background: '#1e293b', color: '#fff' }).then(login);
           }
         } catch(e) {
-          Swal.fire({ icon: 'error', title: 'CONNECTION FAILED', text: 'Check GAS deployment.', background: '#1e293b', color: '#fff' });
+          Swal.fire({ icon: 'error', title: 'ERROR', text: 'Connection Failed', background: '#1e293b', color: '#fff' }).then(login);
         }
       }
     }
 
-    function logout() { authToken = ''; location.reload(); }
-    function updateStatus(online) {
-      const el = document.getElementById('status-dot'), txt = document.getElementById('status-text');
-      if(online) { el.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]'; txt.innerText = 'Online'; txt.className = 'text-emerald-400 font-bold'; }
+    function initSystem() {
+      updateLoader(100, "ACCESS GRANTED");
+      document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_#10b981]";
+      document.getElementById('status-text').innerText = "Secure Connection";
+      document.getElementById('status-text').className = "text-emerald-400 font-bold";
+      setTimeout(() => {
+        document.getElementById('preloader').style.opacity = '0';
+        setTimeout(() => document.getElementById('preloader').style.display = 'none', 500);
+        initData();
+        document.getElementById('view-dashboard').classList.remove('hidden');
+      }, 800);
+    }
+
+    function logout() { localStorage.removeItem('admin_session_token'); location.reload(); }
+
+    function initCursor() {
+       const dot = document.querySelector('.cursor-dot'), outline = document.querySelector('.cursor-outline');
+       window.addEventListener('mousemove', e => { dot.style.left=`${e.clientX}px`; dot.style.top=`${e.clientY}px`; outline.animate({ left: `${e.clientX}px`, top: `${e.clientY}px` }, { duration: 500, fill: "forwards" }); });
     }
 
     async function initData() {
+      initDashboard();
       try {
         const res = await fetch(`${API_URL}?type=api`);
         const result = await res.json();
         renderCards(result.data);
         renderSettings(result.settings);
         document.getElementById('dash-total-links').innerText = result.data.length;
-        updateLoader(100, "READY");
-        setTimeout(() => { document.getElementById('preloader').style.opacity = '0'; document.getElementById('preloader').style.visibility = 'hidden'; }, 600);
-        loadChatSessions(); // 載入聊天
-      } catch (e) { updateLoader(100, "INIT FAILED"); }
+        loadChatSessions();
+      } catch (e) { addLog("Init failed."); }
     }
 
     function switchTab(tab) {
-      document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+      ['dashboard','chat','cards','settings'].forEach(t => document.getElementById(`view-${t}`).classList.add('hidden'));
       document.getElementById(`view-${tab}`).classList.remove('hidden');
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
       document.getElementById(`tab-${tab}`).classList.add('active');
     }
 
-    // ★★★ CHAT LOGIC ★★★
+    function addLog(msg) {
+      const t = document.getElementById('terminal-output');
+      const time = new Date().toLocaleTimeString('en-US', {hour12: false});
+      t.innerHTML += `<div><span class="text-slate-500">[${time}]</span> ${msg}</div>`;
+      t.scrollTop = t.scrollHeight;
+    }
+
+    /* Chat Logic */
     async function loadChatSessions() {
       const container = document.getElementById('chat-sessions');
       try {
         const sessions = await callApi('getChatSessions');
         document.getElementById('dash-msg-count').innerText = sessions.length;
-        
-        if (sessions.length === 0) {
-          container.innerHTML = '<div class="text-center text-slate-500 mt-10">暫無對話</div>';
-          return;
-        }
-        
+        if (sessions.length === 0) { container.innerHTML = '<div class="text-center text-slate-500 mt-10">暫無對話</div>'; return; }
         container.innerHTML = sessions.map(s => `
           <div class="chat-session-item ${currentSessionId === s.sessionId ? 'active' : ''}" onclick="openChat('${s.sessionId}')">
-            <div class="flex justify-between items-center mb-1">
-              <span class="font-bold text-white text-sm truncate w-32">${s.sessionId}</span>
-              <span class="text-[10px] text-slate-500">${new Date(s.timestamp).toLocaleDateString()}</span>
-            </div>
+            <div class="flex justify-between items-center mb-1"><span class="font-bold text-white text-sm truncate w-32">${s.sessionId}</span><span class="text-[10px] text-slate-500">${new Date(s.timestamp).toLocaleDateString()}</span></div>
             <div class="text-xs text-slate-400 truncate">${s.lastMessage}</div>
-          </div>
-        `).join('');
+          </div>`).join('');
       } catch (e) { container.innerHTML = '<div class="text-center text-red-400 mt-10">載入失敗</div>'; }
     }
-
     async function openChat(sid) {
       currentSessionId = sid;
       document.getElementById('current-chat-id').innerText = `Session: ${sid}`;
-      document.getElementById('reply-input').disabled = false;
-      document.getElementById('reply-btn').disabled = false;
+      document.getElementById('reply-input').disabled = false; document.getElementById('reply-btn').disabled = false;
       loadChatHistory(sid);
-      // 重新渲染列表以顯示 Active 狀態
-      loadChatSessions();
+      loadChatSessions(); // refresh active class
     }
-
     async function loadChatHistory(sid) {
       const container = document.getElementById('chat-history');
       container.innerHTML = '<div class="text-center text-slate-500">載入中...</div>';
       try {
         const history = await callApi('getChatHistory', { sessionId: sid });
-        container.innerHTML = history.map(m => 
-          `<div class="msg-bubble ${m.sender === 'Admin' ? 'msg-admin' : 'msg-user'}">
-             ${m.message}
-             <div class="text-[9px] opacity-50 mt-1 text-right">${new Date(m.timestamp).toLocaleTimeString()}</div>
-           </div>`
-        ).join('');
+        container.innerHTML = history.map(m => `<div class="msg-bubble ${m.sender === 'Admin' ? 'msg-admin' : 'msg-user'}">${m.message}<div class="text-[9px] opacity-50 mt-1 text-right">${new Date(m.timestamp).toLocaleTimeString()}</div></div>`).join('');
         container.scrollTop = container.scrollHeight;
       } catch(e) {}
     }
-
     async function sendAdminReply() {
       if(!currentSessionId) return;
       const input = document.getElementById('reply-input');
       const msg = input.value.trim();
       if(!msg) return;
-      
       try {
-        // 樂觀更新
         const container = document.getElementById('chat-history');
         container.innerHTML += `<div class="msg-bubble msg-admin">${msg}<div class="text-[9px] opacity-50 mt-1 text-right">Sending...</div></div>`;
         container.scrollTop = container.scrollHeight;
         input.value = '';
-
         await callApi('adminReply', { sessionId: currentSessionId, message: msg });
-        loadChatHistory(currentSessionId); // 重整
-      } catch(e) {
-        Toast.fire({icon: 'error', title: '發送失敗'});
-      }
+        loadChatHistory(currentSessionId);
+      } catch(e) { Toast.fire({icon: 'error', title: '發送失敗'}); }
     }
 
-    // Cards & Settings (保持不變)
+    /* Cards & Settings */
     function renderCards(data) {
-      const list = document.getElementById('card-list');
-      list.innerHTML = '';
+      const list = document.getElementById('card-list'); list.innerHTML = '';
       data.forEach(item => {
         const div = document.createElement('div');
         div.className = 'list-item glass-panel p-4 rounded-xl border border-white/5 flex items-center gap-4 mb-3';
         div.setAttribute('data-id', item.id);
-        div.innerHTML = `
-          <div class="handle cursor-grab text-slate-500 hover:text-white px-2"><i class="fas fa-grip-vertical"></i></div>
-          <div class="w-12 h-12 rounded-lg bg-black/30 border border-white/10 overflow-hidden flex-shrink-0"><img src="${item.imageUrl || ''}" class="w-full h-full object-cover" onerror="this.style.display='none'"></div>
-          <div class="flex-1 min-w-0"><div class="font-bold text-white truncate">${item.title}</div><div class="text-xs text-slate-400 truncate">${item.url}</div></div>
-          <div class="flex gap-2"><button onclick='editCard(${JSON.stringify(item)})' class="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition cursor-hover"><i class="fas fa-pen"></i></button><button onclick="deleteCard('${item.id}')" class="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-hover"><i class="fas fa-trash"></i></button></div>`;
+        div.innerHTML = `<div class="handle cursor-grab text-slate-500 hover:text-white px-2"><i class="fas fa-grip-vertical"></i></div><div class="w-12 h-12 rounded-lg bg-black/30 border border-white/10 overflow-hidden flex-shrink-0"><img src="${item.imageUrl || ''}" class="w-full h-full object-cover" onerror="this.style.display='none'"></div><div class="flex-1 min-w-0"><div class="font-bold text-white truncate">${item.title}</div><div class="text-xs text-slate-400 truncate">${item.url}</div></div><div class="flex gap-2"><button onclick='editCard(${JSON.stringify(item)})' class="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition cursor-hover"><i class="fas fa-pen"></i></button><button onclick="deleteCard('${item.id}')" class="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-hover"><i class="fas fa-trash"></i></button></div>`;
         list.appendChild(div);
       });
       new Sortable(list, { handle: '.handle', animation: 150, ghostClass: 'opacity-50', onEnd: () => { const ids = Array.from(list.children).map(el => el.getAttribute('data-id')); callApi('saveOrder', { ids: ids }).then(() => Toast.fire({ icon: 'success', title: '排序已更新' })); } });
     }
-
     function editCard(item) {
-      document.getElementById('field-id').value = item.id;
-      document.getElementById('field-title').value = item.title;
-      document.getElementById('field-url').value = item.url;
-      document.getElementById('field-imageUrl').value = item.imageUrl;
-      document.getElementById('field-description').value = item.description;
+      document.getElementById('field-id').value = item.id; document.getElementById('field-title').value = item.title; document.getElementById('field-url').value = item.url; document.getElementById('field-imageUrl').value = item.imageUrl; document.getElementById('field-description').value = item.description;
       const img = document.getElementById('img-preview'); if(item.imageUrl) { img.src=item.imageUrl; img.classList.remove('hidden'); }
       const btn = document.getElementById('submit-btn'); btn.innerHTML = '<i class="fas fa-sync-alt"></i> 更新卡片'; btn.className = "btn-primary w-full py-3 rounded-xl font-bold text-white flex justify-center items-center gap-2 mt-2 bg-blue-600";
-      document.getElementById('form-title').innerHTML = '<i class="fas fa-edit text-blue-400"></i> 編輯卡片'; document.getElementById('cancel-edit-btn').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.getElementById('form-title').innerHTML = '<i class="fas fa-edit text-blue-400"></i> 編輯卡片'; document.getElementById('cancel-edit-btn').classList.remove('hidden');
+      document.getElementById('cardForm').scrollIntoView({behavior:'smooth'});
     }
     function deleteCard(id) { Swal.fire({ title: '確定刪除?', icon: 'warning', showCancelButton: true, confirmButtonText: '刪除', confirmButtonColor: '#ef4444', background: '#1e293b', color:'#fff' }).then((r) => { if(r.isConfirmed) { callApi('deleteData', {id: id}).then(d => { renderCards(d); Toast.fire({ icon: 'success', title: '已刪除' }); }); } }); }
     function resetCardForm() { document.getElementById('cardForm').reset(); document.getElementById('field-id').value = ''; document.getElementById('img-preview').classList.add('hidden'); const btn = document.getElementById('submit-btn'); btn.innerHTML = '<i class="fas fa-save"></i> 新增卡片'; btn.className = "btn-primary w-full py-3 rounded-xl font-bold text-white flex justify-center items-center gap-2 mt-2"; document.getElementById('form-title').innerHTML = '<i class="fas fa-plus-circle text-emerald-400"></i> 新增卡片'; document.getElementById('cancel-edit-btn').classList.add('hidden'); }
@@ -431,14 +418,16 @@
     document.getElementById('settingsForm').addEventListener('submit', function(e) { e.preventDefault(); const formData = {}; new FormData(this).forEach((v, k) => formData[k] = v); callApi('saveSettings', formData).then((d) => { renderSettings(d); Toast.fire({ icon: 'success', title: '設定已儲存' }); }); });
     document.getElementById('field-imageUrl').addEventListener('input', function() { const img = document.getElementById('img-preview'); if(this.value) { img.src=this.value; img.classList.remove('hidden'); } else img.classList.add('hidden'); });
 
-    function initFluidCursor() {
-      const dot = document.querySelector('.cursor-dot'), outline = document.querySelector('.cursor-outline'); let m = {x:0, y:0}, o = {x:0, y:0};
-      window.addEventListener('mousemove', e => { m.x=e.clientX; m.y=e.clientY; dot.style.left=`${m.x}px`; dot.style.top=`${m.y}px`; });
-      const anim = () => { o.x += (m.x - o.x)*0.15; o.y += (m.y - o.y)*0.15; outline.style.left=`${o.x}px`; outline.style.top=`${o.y}px`; requestAnimationFrame(anim); }; anim();
-      new MutationObserver(ms => ms.forEach(m => { if(m.addedNodes.length) attachHover(); })).observe(document.body, {childList:true, subtree:true});
-      function attachHover() { document.querySelectorAll('a, button, .cursor-hover, .tab-btn, .chat-session-item').forEach(el => { el.addEventListener('mouseenter', () => document.body.classList.add('hovering')); el.addEventListener('mouseleave', () => document.body.classList.remove('hovering')); }); } attachHover();
+    function initDashboard() {
+      const ctx = document.getElementById('trafficChart').getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+      gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+      new Chart(ctx, {
+        type: 'line',
+        data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ label: 'Visits', data: [12, 19, 3, 5, 2, 3, 15], backgroundColor: gradient, borderColor: '#10b981', borderWidth: 2, pointBackgroundColor: '#fff', tension: 0.4, fill: true }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b' } }, x: { grid: { display: false }, ticks: { color: '#64748b' } } } }
+      });
     }
-    function initClickRipple() { window.addEventListener('click', (e) => { const r = document.createElement('div'); r.className = 'ripple'; r.style.left=`${e.clientX}px`; r.style.top=`${e.clientY}px`; document.body.appendChild(r); setTimeout(()=>r.remove(),600); }); }
   </script>
 </body>
 </html>
