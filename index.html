@@ -3,183 +3,482 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard</title>
+  <title>Admin Console</title>
+  
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-slate-800 text-slate-100 min-h-screen p-4 md:p-8 font-sans">
+  
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
+  <style>
+    /* === 全局樣式 === */
+    body { 
+      background-color: #0a0a0a; 
+      color: #f8fafc; 
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      cursor: none; /* 隱藏原生游標 */
+    }
+    
+    /* ★★★ 關鍵修正：讓 SweetAlert 登入框永遠在最上層 ★★★ */
+    .swal2-container { z-index: 100000 !important; }
+    
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+    /* 極光背景 */
+    .gradient-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.4; animation: blob 10s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+    .orb-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: #4f46e5; animation-delay: 0s; }
+    .orb-2 { top: 20%; right: -10%; width: 40vw; height: 40vw; background: #10b981; animation-delay: 2s; }
+    .orb-3 { bottom: -10%; left: 20%; width: 60vw; height: 60vw; background: #3b82f6; animation-delay: 4s; }
+    @keyframes blob { 
+      0% { transform: translate(0, 0) scale(1); } 
+      33% { transform: translate(30px, -50px) scale(1.1); } 
+      66% { transform: translate(-20px, 20px) scale(0.9); } 
+      100% { transform: translate(0, 0) scale(1); } 
+    }
+
+    /* Preloader */
+    #preloader {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #0a0a0a; z-index: 99999;
+      display: flex; justify-content: center; align-items: center;
+      transition: opacity 0.8s ease-in-out, visibility 0.8s;
+    }
+    .loader-content { text-align: center; }
+    .loader-bar { width: 200px; height: 2px; background: #1e293b; margin-top: 20px; overflow: hidden; position: relative; }
+    .loader-progress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: #10b981; transition: width 0.3s; box-shadow: 0 0 10px #10b981; }
+
+    /* 游標 */
+    .cursor-dot { width: 8px; height: 8px; background-color: white; position: fixed; top: 0; left: 0; transform: translate(-50%, -50%); border-radius: 50%; z-index: 9999; pointer-events: none; mix-blend-mode: difference; }
+    .cursor-outline { width: 40px; height: 40px; border: 1.5px solid rgba(255, 255, 255, 0.5); position: fixed; top: 0; left: 0; transform: translate(-50%, -50%); border-radius: 50%; z-index: 9998; pointer-events: none; transition: width 0.2s, height 0.2s, background-color 0.2s; mix-blend-mode: difference; }
+    body.hovering .cursor-outline { width: 60px; height: 60px; background-color: rgba(255, 255, 255, 0.2); border-color: transparent; }
+    body.clicking .cursor-outline { transform: translate(-50%, -50%) scale(0.8); }
+
+    /* 點擊水波紋 */
+    .ripple {
+      position: absolute; border-radius: 50%; transform: scale(0);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      animation: ripple 0.6s linear; pointer-events: none; z-index: 9997;
+    }
+    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+    /* 玻璃質感元件 */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    .glass-input {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      transition: all 0.3s;
+    }
+    .glass-input:focus {
+      border-color: #10b981;
+      background: rgba(0, 0, 0, 0.4);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+
+    /* 按鈕特效 */
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      transition: all 0.3s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); }
+    
+    /* Tab 樣式 */
+    .tab-btn { color: #94a3b8; transition: all 0.3s; border-bottom: 2px solid transparent; }
+    .tab-btn:hover { color: white; background: rgba(255,255,255,0.02); }
+    .tab-btn.active { color: #10b981; border-bottom-color: #10b981; background: rgba(16, 185, 129, 0.05); }
+
+    /* 列表動畫 */
+    .list-item { transition: transform 0.2s, background 0.2s; }
+    .list-item:hover { background: rgba(255, 255, 255, 0.05); transform: translateX(5px); }
+    .handle { cursor: grab; } .handle:active { cursor: grabbing; }
+
+    /* 終端機日誌 */
+    #terminal-output { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+    #terminal-output div { margin-bottom: 4px; opacity: 0.8; }
+    #terminal-output div:last-child { opacity: 1; color: #10b981; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- ==================== CONFIGURATION ==================== -->
   <script>
-    // 您的 GAS API 網址
+    // ★★★ 請確認此網址與前台 index.html 一致 ★★★
     const API_URL = "https://script.google.com/macros/s/AKfycbw1J5DNcuCTfTGeQXhosPZYOW0MAfXDCNBHIi7rQTQMw7Nrfieuc4XEw0diuQkQ6XdUPg/exec";
   </script>
+  <!-- ======================================================= -->
 
-  <div class="max-w-6xl mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
-    
-    <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/90 backdrop-blur sticky top-0 z-10">
-      <div class="flex items-center gap-3">
-        <h1 class="text-lg font-bold text-white tracking-wide">Admin Console</h1>
-        <span id="version-tag" class="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-slate-400">v...</span>
-      </div>
-      <div class="flex items-center gap-3">
-        <span id="status-indicator" class="text-xs text-red-400 flex items-center gap-1.5 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">Offline</span>
-        <button onclick="logout()" class="text-xs bg-slate-800 px-3 py-1 rounded border border-slate-700 hover:bg-slate-700">登出</button>
-      </div>
-    </div>
-
-    <div class="flex border-b border-slate-700 bg-slate-800/30">
-      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active w-1/3 py-4 font-bold text-sm border-r border-slate-700/50">儀表板</button>
-      <button onclick="switchTab('cards')" id="tab-cards" class="tab-btn w-1/3 py-4 font-bold text-sm border-r border-slate-700/50">卡片管理</button>
-      <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn w-1/3 py-4 font-bold text-sm">系統設定</button>
-    </div>
-
-    <!-- Dashboard -->
-    <div id="view-dashboard" class="p-6 md:p-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-          <h3 class="text-slate-400 text-xs font-bold uppercase">連結總數</h3>
-          <div class="text-3xl font-bold text-white" id="dash-total-links">-</div>
-        </div>
-        <div class="bg-black/80 p-4 rounded-xl border border-slate-700 font-mono text-xs h-48 overflow-y-auto text-green-500" id="terminal-output">
-          <div>> System ready.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card Management -->
-    <div id="view-cards" class="hidden p-6">
-      <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700 mb-6">
-        <h2 class="text-sm font-bold text-emerald-400 mb-4 uppercase">新增/編輯卡片</h2>
-        <form id="cardForm" class="space-y-4">
-          <input type="hidden" name="id" id="field-id">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" name="title" id="field-title" required placeholder="標題" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
-            <input type="url" name="url" id="field-url" required placeholder="連結 URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
-          </div>
-          <input type="url" name="imageUrl" id="field-imageUrl" placeholder="圖片 URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
-          <textarea name="description" id="field-description" rows="2" placeholder="描述" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white"></textarea>
-          <div class="flex gap-2">
-            <button type="submit" id="submit-btn" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded transition">儲存</button>
-            <button type="button" onclick="resetCardForm()" class="px-4 bg-slate-700 hover:bg-slate-600 rounded text-slate-300">重置</button>
-          </div>
-        </form>
-      </div>
-      <div id="card-list" class="space-y-2 pb-10"></div>
-    </div>
-
-    <!-- Settings -->
-    <div id="view-settings" class="hidden p-6">
-      <form id="settingsForm" class="space-y-4">
-        <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700">
-          <h3 class="text-emerald-400 text-sm font-bold mb-4 uppercase">網站資訊</h3>
-          <input type="text" name="site_title" placeholder="網站標題" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
-          <input type="text" name="site_subtitle" placeholder="副標題 (打字機內容, 用逗號隔開)" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
-          <input type="url" name="avatar_url" placeholder="頭像 URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
-          <textarea name="bio_text" placeholder="個人簡介" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white h-20"></textarea>
-        </div>
-        <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700">
-          <h3 class="text-blue-400 text-sm font-bold mb-4 uppercase">社群 ID / URL</h3>
-          <input type="text" name="github_username" placeholder="GitHub ID" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
-          <input type="url" name="instagram_url" placeholder="Instagram URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
-          <input type="url" name="twitter_url" placeholder="Twitter URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
-          <input type="url" name="linkedin_url" placeholder="LinkedIn URL" class="w-full bg-slate-900 border border-slate-700 rounded p-2 mb-2 text-white">
-        </div>
-        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded transition">儲存設定</button>
-      </form>
+  <!-- 1. Preloader (初始顯示，登入後載入資料時消失) -->
+  <div id="preloader">
+    <div class="loader-content">
+      <div class="text-3xl font-bold text-white tracking-widest mb-2 font-mono">ADMIN CONSOLE</div>
+      <div class="text-xs text-slate-500 font-mono mb-4" id="loader-text">WAITING FOR LOGIN...</div>
+      <div class="loader-bar"><div class="loader-progress" id="loader-progress"></div></div>
     </div>
   </div>
 
-  <style>
-    .tab-btn.active { color: #10b981; border-bottom: 2px solid #10b981; background: rgba(16, 185, 129, 0.05); }
-    .tab-btn { color: #94a3b8; transition: all 0.3s; }
-  </style>
+  <!-- 背景特效 -->
+  <div class="gradient-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- 游標 -->
+  <div class="cursor-dot hidden md:block"></div>
+  <div class="cursor-outline hidden md:block"></div>
+
+  <main class="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full relative z-10">
+    
+    <!-- Header -->
+    <div class="glass-panel rounded-2xl p-1 mb-8 cursor-hover">
+      <div class="px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-white/5">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
+            <i class="fas fa-terminal text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold tracking-wide text-white">SYSTEM CORE</h1>
+            <div class="flex items-center gap-2 text-xs text-slate-400">
+              <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
+              <span id="status-text">Disconnected</span>
+              <span class="mx-1">|</span>
+              <span id="version-tag" class="font-mono opacity-50">v...</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <a href="index.html" target="_blank" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center gap-2 cursor-hover">
+            <i class="fas fa-external-link-alt"></i> 預覽前台
+          </a>
+          <button onclick="logout()" class="px-4 py-2 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition border border-red-500/20 cursor-hover">
+            <i class="fas fa-power-off mr-1"></i> 登出
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex text-sm font-medium">
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active flex-1 py-4 flex justify-center items-center gap-2 cursor-hover">
+          <i class="fas fa-chart-pie"></i> 儀表板
+        </button>
+        <button onclick="switchTab('cards')" id="tab-cards" class="tab-btn flex-1 py-4 flex justify-center items-center gap-2 cursor-hover">
+          <i class="fas fa-layer-group"></i> 卡片管理
+        </button>
+        <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn flex-1 py-4 flex justify-center items-center gap-2 cursor-hover">
+          <i class="fas fa-sliders-h"></i> 系統設定
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Areas -->
+    <div class="relative min-h-[500px]">
+      
+      <!-- 1. Dashboard -->
+      <div id="view-dashboard" class="space-y-6 animate-fade-in">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group cursor-hover">
+            <div class="absolute top-0 right-0 p-6 opacity-10 transition group-hover:scale-110 group-hover:opacity-20"><i class="fas fa-link text-5xl text-emerald-400"></i></div>
+            <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Total Links</h3>
+            <div class="text-4xl font-bold text-white" id="dash-total-links">-</div>
+          </div>
+          <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group cursor-hover">
+            <div class="absolute top-0 right-0 p-6 opacity-10 transition group-hover:scale-110 group-hover:opacity-20"><i class="fas fa-eye text-5xl text-indigo-400"></i></div>
+            <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Views (Mock)</h3>
+            <div class="text-4xl font-bold text-white" id="dash-views">0</div>
+          </div>
+          <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group cursor-hover">
+            <div class="absolute top-0 right-0 p-6 opacity-10 transition group-hover:scale-110 group-hover:opacity-20"><i class="fas fa-server text-5xl text-blue-400"></i></div>
+            <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Backend Status</h3>
+            <div class="text-4xl font-bold text-emerald-400">Stable</div>
+          </div>
+        </div>
+
+        <!-- Chart & Log -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 glass-panel p-6 rounded-2xl">
+            <h3 class="text-slate-400 text-xs font-bold uppercase mb-4">Traffic Overview</h3>
+            <div class="h-64"><canvas id="trafficChart"></canvas></div>
+          </div>
+          <div class="glass-panel p-6 rounded-2xl flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-white/5 pb-2">
+              <h3 class="text-slate-400 text-xs font-bold uppercase">System Log</h3>
+              <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            </div>
+            <div id="terminal-output" class="flex-1 overflow-y-auto h-56 pr-2">
+              <div>> Initializing admin interface...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Card Management -->
+      <div id="view-cards" class="hidden space-y-6 animate-fade-in">
+        <!-- Edit Form -->
+        <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-emerald-500">
+          <div class="flex justify-between items-center mb-6">
+            <h2 id="form-title" class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fas fa-plus-circle text-emerald-400"></i> 新增卡片
+            </h2>
+            <button onclick="resetCardForm()" id="cancel-edit-btn" class="hidden text-xs text-slate-400 hover:text-white px-3 py-1 rounded border border-slate-600 hover:bg-slate-700 cursor-hover">取消編輯</button>
+          </div>
+          
+          <form id="cardForm" class="space-y-5">
+            <input type="hidden" name="id" id="field-id">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div class="space-y-1">
+                <label class="text-xs text-slate-400 ml-1">標題</label>
+                <input type="text" name="title" id="field-title" required placeholder="Project Title" class="glass-input w-full rounded-lg px-4 py-3">
+              </div>
+              <div class="space-y-1">
+                <label class="text-xs text-slate-400 ml-1">連結 (URL)</label>
+                <input type="url" name="url" id="field-url" required placeholder="https://..." class="glass-input w-full rounded-lg px-4 py-3">
+              </div>
+            </div>
+            
+            <div class="space-y-1">
+              <label class="text-xs text-slate-400 ml-1">圖片 (Image URL)</label>
+              <div class="flex gap-4">
+                <input type="url" name="imageUrl" id="field-imageUrl" placeholder="https://..." class="glass-input flex-1 rounded-lg px-4 py-3">
+                <div class="w-12 h-12 rounded-lg bg-black/30 border border-white/10 overflow-hidden flex-shrink-0 relative group">
+                  <img id="img-preview" src="" onerror="this.style.display='none'" class="w-full h-full object-cover hidden">
+                  <div class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-500 bg-black/60 opacity-0 group-hover:opacity-100 transition">預覽</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-xs text-slate-400 ml-1">描述</label>
+              <textarea name="description" id="field-description" rows="2" placeholder="Brief description..." class="glass-input w-full rounded-lg px-4 py-3 resize-none"></textarea>
+            </div>
+
+            <button type="submit" id="submit-btn" class="btn-primary w-full py-3 rounded-xl font-bold text-white flex justify-center items-center gap-2 mt-2 cursor-hover">
+              <i class="fas fa-save"></i> 儲存卡片
+            </button>
+          </form>
+        </div>
+
+        <!-- List -->
+        <div class="glass-panel p-6 rounded-2xl">
+          <div class="flex justify-between items-end mb-4 px-1">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">目前列表</h3>
+            <span class="text-[10px] bg-white/5 text-slate-400 px-2 py-1 rounded border border-white/5"><i class="fas fa-arrows-alt mr-1"></i> 拖曳排序</span>
+          </div>
+          <div id="card-list" class="space-y-3 pb-4"></div>
+        </div>
+      </div>
+
+      <!-- 3. Settings -->
+      <div id="view-settings" class="hidden space-y-6 animate-fade-in">
+        <form id="settingsForm" class="space-y-6">
+          <!-- Basic Info -->
+          <div class="glass-panel p-6 rounded-2xl">
+            <h3 class="text-emerald-400 text-sm font-bold mb-6 uppercase border-b border-white/5 pb-2">基本資料</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+               <div class="space-y-1">
+                 <label class="text-xs text-slate-400 ml-1">網站標題 (Site Title)</label>
+                 <input type="text" name="site_title" class="glass-input w-full rounded-lg px-4 py-3">
+               </div>
+               <div class="space-y-1">
+                 <label class="text-xs text-slate-400 ml-1">副標題 (打字機內容, 用逗號隔開)</label>
+                 <input type="text" name="site_subtitle" class="glass-input w-full rounded-lg px-4 py-3">
+               </div>
+            </div>
+            <div class="space-y-1 mb-6">
+               <label class="text-xs text-slate-400 ml-1">頭像 (Avatar URL)</label>
+               <input type="url" name="avatar_url" class="glass-input w-full rounded-lg px-4 py-3">
+            </div>
+            <div class="space-y-1">
+               <label class="text-xs text-slate-400 ml-1">個人簡介 (Bio)</label>
+               <textarea name="bio_text" class="glass-input w-full rounded-lg px-4 py-3 h-24 resize-none"></textarea>
+            </div>
+          </div>
+
+          <!-- Social Links (Expanded) -->
+          <div class="glass-panel p-6 rounded-2xl">
+            <h3 class="text-indigo-400 text-sm font-bold mb-6 uppercase border-b border-white/5 pb-2">社群連結</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div class="relative">
+                 <i class="fab fa-github absolute left-4 top-3.5 text-slate-500"></i>
+                 <input type="text" name="github_username" placeholder="GitHub ID" class="glass-input w-full rounded-lg pl-10 pr-4 py-3">
+               </div>
+               <div class="relative">
+                 <i class="fab fa-instagram absolute left-4 top-3.5 text-slate-500"></i>
+                 <input type="url" name="instagram_url" placeholder="Instagram URL" class="glass-input w-full rounded-lg pl-10 pr-4 py-3">
+               </div>
+               <div class="relative">
+                 <i class="fab fa-twitter absolute left-4 top-3.5 text-slate-500"></i>
+                 <input type="url" name="twitter_url" placeholder="Twitter (X) URL" class="glass-input w-full rounded-lg pl-10 pr-4 py-3">
+               </div>
+               <div class="relative">
+                 <i class="fab fa-linkedin absolute left-4 top-3.5 text-slate-500"></i>
+                 <input type="url" name="linkedin_url" placeholder="LinkedIn URL" class="glass-input w-full rounded-lg pl-10 pr-4 py-3">
+               </div>
+               <!-- 新增欄位 -->
+               <div class="relative">
+                 <i class="fab fa-facebook absolute left-4 top-3.5 text-slate-500"></i>
+                 <input type="url" name="facebook_url" placeholder="Facebook URL" class="glass-input w-full rounded-lg pl-10 pr-4 py-3">
+               </div>
+               <div class="relative">
+                 <i class="fab fa-youtube absolute left-4 top-3.5 text-slate-500"></i>
+                 <input type="url" name="youtube_url" placeholder="YouTube Channel URL" class="glass-input w-full rounded-lg pl-10 pr-4 py-3">
+               </div>
+               <div class="relative">
+                 <i class="fas fa-envelope absolute left-4 top-3.5 text-slate-500"></i>
+                 <input type="email" name="email_address" placeholder="Email Address (mailto:)" class="glass-input w-full rounded-lg pl-10 pr-4 py-3">
+               </div>
+               <div class="relative">
+                 <i class="fas fa-globe absolute left-4 top-3.5 text-slate-500"></i>
+                 <input type="url" name="website_url" placeholder="Personal Website URL" class="glass-input w-full rounded-lg pl-10 pr-4 py-3">
+               </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary w-full py-4 rounded-xl font-bold text-white text-lg flex justify-center items-center gap-2 shadow-lg cursor-hover">
+            <i class="fas fa-check-circle"></i> 儲存全站設定
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </main>
 
   <script>
-    let authToken = '';
+    // === Logic ===
+    let authToken = ''; 
+    let chartInstance = null;
+
+    function updateLoader(percent, text) {
+      document.getElementById('loader-progress').style.width = percent + '%';
+      if(text) document.getElementById('loader-text').innerText = text;
+    }
+
+    const Toast = Swal.mixin({
+      toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
+      background: '#1e293b', color: '#fff',
+      didOpen: (toast) => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
+    });
 
     async function callApi(action, payload = {}) {
       if (!authToken) throw new Error("請先登入");
-      
-      addLog(`Sending request: ${action}...`);
-      
-      // 使用標準 fetch POST
+      addLog(`Sending: ${action}...`);
       const response = await fetch(API_URL, {
         method: 'POST',
-        body: JSON.stringify({
-          action: action,
-          password: authToken,
-          payload: payload
-        })
+        body: JSON.stringify({ action: action, password: authToken, payload: payload })
       });
-
       const result = await response.json();
-      
       if (result.version) document.getElementById('version-tag').innerText = result.version;
-      
       if (result.status === 'error') {
-        addLog(`Error: ${result.message}`);
-        throw new Error(result.message);
+        addLog(`Error: ${result.message}`); throw new Error(result.message);
       }
-      
-      addLog(`Success: ${action}`);
+      addLog(`Success: ${action} ✔`);
       return result.data;
     }
 
     window.onload = async () => {
+      updateLoader(0, "WAITING FOR LOGIN...");
+      initFluidCursor();
+      initClickRipple();
       await login();
     };
 
     async function login() {
       const { value: password } = await Swal.fire({
-        title: '請輸入後台密碼',
+        title: 'SYSTEM ACCESS',
         input: 'password',
-        confirmButtonText: '登入',
+        inputPlaceholder: 'Enter Password',
+        confirmButtonText: 'AUTHENTICATE',
         confirmButtonColor: '#10b981',
         allowOutsideClick: false,
-        background: '#1e293b',
-        color: '#fff'
+        background: '#0f172a',
+        color: '#fff',
+        backdrop: `rgba(0,0,0,0.8)`,
+        customClass: { input: 'text-center font-mono tracking-widest bg-slate-800 border-slate-600 text-white' }
       });
 
       if (password) {
-        // 驗證密碼
         try {
+          Swal.showLoading();
           const res = await fetch(`${API_URL}?type=verify&password=${password}`);
           const data = await res.json();
           
           if (data.status === 'success') {
             authToken = password;
-            document.getElementById('status-indicator').innerHTML = '<span class="text-emerald-400">● Online</span>';
+            updateStatus(true);
             if(data.version) document.getElementById('version-tag').innerText = data.version;
-            addLog("Logged in.");
+            addLog("Auth successful.");
+            
+            // Preloader animation
+            updateLoader(50, "FETCHING DATA...");
+            Swal.close();
             initData();
           } else {
-            Swal.fire({ icon: 'error', title: '密碼錯誤或後端未設定', text: data.message, background: '#1e293b', color: '#fff' }).then(login);
+            Swal.fire({ icon: 'error', title: 'ACCESS DENIED', text: data.message, background: '#1e293b', color: '#fff' }).then(login);
           }
         } catch(e) {
-          Swal.fire({ icon: 'error', title: '連線失敗', text: '請確認 GAS 網址與部署設定', background: '#1e293b', color: '#fff' });
+          Swal.fire({ icon: 'error', title: 'CONNECTION FAILED', text: 'Check GAS deployment.', background: '#1e293b', color: '#fff' });
         }
       }
     }
 
-    function logout() {
-      authToken = '';
-      location.reload();
+    function logout() { authToken = ''; location.reload(); }
+
+    function updateStatus(online) {
+      const el = document.getElementById('status-dot');
+      const txt = document.getElementById('status-text');
+      if(online) {
+        el.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]';
+        txt.innerText = 'Online';
+        txt.className = 'text-emerald-400 font-bold';
+      }
     }
 
     async function initData() {
+      initDashboard();
       try {
         const res = await fetch(`${API_URL}?type=api`);
         const result = await res.json();
         
         renderCards(result.data);
         renderSettings(result.settings);
+        
         document.getElementById('dash-total-links').innerText = result.data.length;
-        addLog(`Data loaded. ${result.data.length} items.`);
+        let views = 1200;
+        setInterval(() => {
+           views += Math.floor(Math.random() * 3);
+           document.getElementById('dash-views').innerText = views.toLocaleString();
+        }, 5000);
+
+        // Finish Loading
+        updateLoader(100, "READY");
+        setTimeout(() => {
+          const preloader = document.getElementById('preloader');
+          preloader.style.opacity = '0';
+          preloader.style.visibility = 'hidden';
+        }, 600);
+
       } catch (e) {
-        addLog("Failed to load initial data.");
+        addLog("Init failed.");
+        updateLoader(100, "INIT FAILED");
       }
     }
 
@@ -192,97 +491,162 @@
 
     function addLog(msg) {
       const t = document.getElementById('terminal-output');
-      t.innerHTML += `<div>> ${msg}</div>`;
+      const time = new Date().toLocaleTimeString('en-US', {hour12: false});
+      t.innerHTML += `<div><span class="text-slate-500">[${time}]</span> ${msg}</div>`;
       t.scrollTop = t.scrollHeight;
     }
 
-    // Render Cards
+    // Cards
     function renderCards(data) {
       const list = document.getElementById('card-list');
       list.innerHTML = '';
       data.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'bg-slate-800 p-3 rounded border border-slate-700 flex items-center gap-3 group';
+        div.className = 'list-item glass-panel p-4 rounded-xl border border-white/5 flex items-center gap-4 mb-3';
         div.setAttribute('data-id', item.id);
         div.innerHTML = `
-          <div class="handle cursor-grab text-slate-500 px-2"><i class="fas fa-grip-vertical"></i></div>
-          <div class="flex-1 font-bold text-slate-300 truncate">${item.title}</div>
-          <button onclick='editCard(${JSON.stringify(item)})' class="text-blue-400 p-2"><i class="fas fa-pen"></i></button>
-          <button onclick="deleteCard('${item.id}')" class="text-red-400 p-2"><i class="fas fa-trash"></i></button>
+          <div class="handle cursor-grab text-slate-500 hover:text-white px-2"><i class="fas fa-grip-vertical"></i></div>
+          <div class="w-12 h-12 rounded-lg bg-black/30 border border-white/10 overflow-hidden flex-shrink-0">
+             <img src="${item.imageUrl || ''}" class="w-full h-full object-cover" onerror="this.style.display='none'">
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-white truncate">${item.title}</div>
+            <div class="text-xs text-slate-400 truncate">${item.url}</div>
+          </div>
+          <div class="flex gap-2">
+            <button onclick='editCard(${JSON.stringify(item)})' class="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition cursor-hover"><i class="fas fa-pen"></i></button>
+            <button onclick="deleteCard('${item.id}')" class="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-hover"><i class="fas fa-trash"></i></button>
+          </div>
         `;
         list.appendChild(div);
       });
       
       new Sortable(list, {
-        handle: '.handle',
-        animation: 150,
+        handle: '.handle', animation: 150, ghostClass: 'opacity-50',
         onEnd: () => {
           const ids = Array.from(list.children).map(el => el.getAttribute('data-id'));
-          callApi('saveOrder', { ids: ids }).then(renderCards);
+          callApi('saveOrder', { ids: ids }).then(() => Toast.fire({ icon: 'success', title: '排序已更新' }));
         }
       });
     }
 
-    // Edit & Delete
     function editCard(item) {
       document.getElementById('field-id').value = item.id;
       document.getElementById('field-title').value = item.title;
       document.getElementById('field-url').value = item.url;
       document.getElementById('field-imageUrl').value = item.imageUrl;
       document.getElementById('field-description').value = item.description;
-      document.getElementById('submit-btn').innerText = "更新卡片";
-      document.getElementById('submit-btn').className = "flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded transition";
+      
+      const img = document.getElementById('img-preview');
+      if(item.imageUrl) { img.src=item.imageUrl; img.classList.remove('hidden'); }
+      
+      const btn = document.getElementById('submit-btn');
+      btn.innerHTML = '<i class="fas fa-sync-alt"></i> 更新卡片';
+      btn.className = "btn-primary w-full py-3 rounded-xl font-bold text-white flex justify-center items-center gap-2 mt-2 bg-blue-600";
+      
+      document.getElementById('form-title').innerHTML = '<i class="fas fa-edit text-blue-400"></i> 編輯卡片';
+      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function deleteCard(id) {
-      if(confirm('確定刪除?')) {
-        callApi('deleteData', {id: id}).then(renderCards);
-      }
+      Swal.fire({
+        title: '確定刪除?', icon: 'warning', showCancelButton: true, confirmButtonText: '刪除', confirmButtonColor: '#ef4444', background: '#1e293b', color:'#fff'
+      }).then((r) => {
+        if(r.isConfirmed) {
+          callApi('deleteData', {id: id}).then(d => { renderCards(d); Toast.fire({ icon: 'success', title: '已刪除' }); });
+        }
+      });
     }
 
     function resetCardForm() {
       document.getElementById('cardForm').reset();
       document.getElementById('field-id').value = '';
-      document.getElementById('submit-btn').innerText = "新增卡片";
-      document.getElementById('submit-btn').className = "flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded transition";
+      document.getElementById('img-preview').classList.add('hidden');
+      
+      const btn = document.getElementById('submit-btn');
+      btn.innerHTML = '<i class="fas fa-save"></i> 新增卡片';
+      btn.className = "btn-primary w-full py-3 rounded-xl font-bold text-white flex justify-center items-center gap-2 mt-2";
+      
+      document.getElementById('form-title').innerHTML = '<i class="fas fa-plus-circle text-emerald-400"></i> 新增卡片';
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
     }
 
-    // Forms
     document.getElementById('cardForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const id = document.getElementById('field-id').value;
       const payload = {
-        id: id,
-        title: this.title.value,
-        url: this.url.value,
-        imageUrl: this.imageUrl.value,
-        description: this.description.value
+        id: id, title: this.title.value, url: this.url.value, imageUrl: this.imageUrl.value, description: this.description.value
       };
       const action = id ? 'updateData' : 'addData';
       callApi(action, payload).then((d) => {
-        renderCards(d);
-        resetCardForm();
-        Swal.fire({ icon: 'success', title: '成功', timer: 1000, showConfirmButton: false, background: '#1e293b', color:'#fff' });
-      }).catch(err => Swal.fire({ icon: 'error', title: '失敗', text: err.message }));
+        renderCards(d); resetCardForm(); Toast.fire({ icon: 'success', title: id ? '更新成功' : '新增成功' });
+      }).catch(err => Toast.fire({ icon: 'error', title: err.message }));
     });
 
-    // Settings
     function renderSettings(s) {
       const form = document.getElementById('settingsForm');
-      for (const key in s) {
-        if (form[key]) form[key].value = s[key];
-      }
+      for (const key in s) { if (form[key]) form[key].value = s[key]; }
     }
 
     document.getElementById('settingsForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const formData = {};
       new FormData(this).forEach((v, k) => formData[k] = v);
-      callApi('saveSettings', formData).then((d) => {
-        renderSettings(d);
-        Swal.fire({ icon: 'success', title: '設定已儲存', timer: 1000, showConfirmButton: false, background: '#1e293b', color:'#fff' });
-      });
+      callApi('saveSettings', formData).then((d) => { renderSettings(d); Toast.fire({ icon: 'success', title: '設定已儲存' }); });
     });
+
+    document.getElementById('field-imageUrl').addEventListener('input', function() {
+       const img = document.getElementById('img-preview');
+       if(this.value) { img.src=this.value; img.classList.remove('hidden'); } else img.classList.add('hidden');
+    });
+
+    // Fluid Cursor
+    function initFluidCursor() {
+      const dot = document.querySelector('.cursor-dot'), outline = document.querySelector('.cursor-outline');
+      let m = {x:0, y:0}, o = {x:0, y:0};
+      window.addEventListener('mousemove', e => { m.x=e.clientX; m.y=e.clientY; dot.style.left=`${m.x}px`; dot.style.top=`${m.y}px`; });
+      window.addEventListener('mousedown', () => document.body.classList.add('clicking'));
+      window.addEventListener('mouseup', () => document.body.classList.remove('clicking'));
+      const anim = () => {
+        o.x += (m.x - o.x)*0.15; o.y += (m.y - o.y)*0.15;
+        outline.style.left=`${o.x}px`; outline.style.top=`${o.y}px`;
+        requestAnimationFrame(anim);
+      };
+      anim();
+      new MutationObserver(ms => ms.forEach(m => { if(m.addedNodes.length) attachHover(); }))
+        .observe(document.body, {childList:true, subtree:true});
+      function attachHover() { document.querySelectorAll('a, button, .cursor-hover, .glass-panel, input, textarea, .tab-btn').forEach(el => {
+        el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+        el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+      }); }
+      attachHover();
+    }
+
+    function initClickRipple() {
+      window.addEventListener('click', (e) => {
+        const ripple = document.createElement('div');
+        ripple.className = 'ripple';
+        ripple.style.left = `${e.clientX}px`;
+        ripple.style.top = `${e.clientY}px`;
+        document.body.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+      });
+    }
+
+    function initDashboard() {
+      const ctx = document.getElementById('trafficChart').getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+      gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{ label: 'Visits', data: [12, 19, 3, 5, 2, 3, 15], backgroundColor: gradient, borderColor: '#10b981', borderWidth: 2, pointBackgroundColor: '#fff', tension: 0.4, fill: true }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b' } }, x: { grid: { display: false }, ticks: { color: '#64748b' } } } }
+      });
+    }
   </script>
 </body>
 </html>
